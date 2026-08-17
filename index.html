@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ders Ã‡alÄ±ÅŸma Takip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:#0c0e13; font-family:'Inter',sans-serif; color:#EDEAE0;
+    display:flex; justify-content:center; padding: 24px 12px;
+  }
+  .app{
+    font-family:'Inter',sans-serif; background:#14171F; color:#EDEAE0;
+    border-radius:16px; padding:28px 24px 32px; max-width:720px; width:100%;
+  }
+  .st-num{ font-family:'Fraunces',serif; }
+  .st-btn{ transition: transform .1s ease, background .15s ease; cursor:pointer; border:none; }
+  .st-btn:active{ transform: scale(.96); }
+  .st-btn:disabled{ opacity:.4; cursor:default; }
+  .st-input{ background:#262C3D; border:1px solid #333A4D; color:#EDEAE0; border-radius:8px; padding:8px 12px; font-size:14px; font-family:'Inter',sans-serif; }
+  .st-input::placeholder{ color:#6B7180; }
+  .st-input:focus{ outline:none; border-color:#E8B75E; }
+  select.st-input option{ background:#262C3D; }
+  .st-spin{ animation: st-spin .8s linear infinite; display:inline-flex; }
+  @keyframes st-spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  .hidden{ display:none !important; }
+  .row-item{ display:flex; align-items:center; justify-content:space-between; background:#262C3D; border-radius:8px; padding:8px 12px; font-size:13px; }
+  .card{ background:#1E2330; border-radius:12px; padding:16px; margin-bottom:24px; }
+  .card-title{ font-size:13px; color:#8890A6; margin:0 0 12px; display:flex; align-items:center; gap:6px; }
+  .icon{ width:14px; height:14px; display:inline-flex; }
+  .icon svg{ width:100%; height:100%; }
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#14171F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ders Takip">
+</head>
+<body>
+<div class="app" id="app">
+
+  <div id="dueReminderBanner" class="hidden" style="background:#2A2416;border:1px solid #E8B75E;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="color:#E8B75E;">ğŸ””</span>
+      <span style="font-size:14px;" id="dueReminderText"></span>
+    </div>
+    <button class="st-btn" id="dismissReminderBtn" style="background:transparent;color:#8890A6;">âœ•</button>
+  </div>
+
+  <div id="breakSuggestBanner" class="hidden" style="background:#16261E;border:1px solid #6FCF97;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <span style="font-size:14px;">1 saat Ã§alÄ±ÅŸtÄ±n. 15 dakika mola zamanÄ±!</span>
+    <div style="display:flex;gap:8px;">
+      <button class="st-btn" id="startBreakBtn" style="background:#6FCF97;color:#14171F;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;">Molaya baÅŸla</button>
+      <button class="st-btn" id="dismissBreakBtn" style="background:transparent;color:#8890A6;border:1px solid #333A4D;border-radius:8px;padding:6px 12px;font-size:13px;">Devam et</button>
+    </div>
+  </div>
+
+  <div id="studyView">
+    <div style="text-align:center;margin-bottom:8px;">
+      <p style="font-size:13px;color:#8890A6;margin:0 0 4px;letter-spacing:.03em;">DERS Ã‡ALIÅMA SAYACI</p>
+    </div>
+    <div style="display:flex;justify-content:center;position:relative;margin:12px 0 20px;">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="88" fill="none" stroke="#262C3D" stroke-width="10"></circle>
+        <circle id="studyRing" cx="100" cy="100" r="88" fill="none" stroke="#E8B75E" stroke-width="10" stroke-linecap="round" transform="rotate(-90 100 100)"></circle>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <span class="st-num" id="studyClock" style="font-size:34px;font-weight:600;">00:00</span>
+        <span style="font-size:12px;color:#8890A6;margin-top:4px;" id="studyState">hazÄ±r</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
+      <input class="st-input" id="subjectInput" placeholder="Ne Ã§alÄ±ÅŸÄ±yorsun? (Ã¶r. Matematik)" style="width:220px;">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:24px;">
+      <button class="st-btn" id="startPauseBtn" style="background:#E8B75E;color:#14171F;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;">BaÅŸla</button>
+      <button class="st-btn" id="finishBtn" style="background:#6FCF97;color:#14171F;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;" disabled>Bitir ve Kaydet</button>
+      <button class="st-btn" id="resetTimerBtn" style="background:#262C3D;color:#EDEAE0;border-radius:10px;padding:10px 14px;" disabled>â†º</button>
+    </div>
+  </div>
+
+  <div id="breakView" class="hidden">
+    <div style="text-align:center;margin-bottom:8px;">
+      <p style="font-size:13px;color:#6FCF97;margin:0 0 4px;letter-spacing:.03em;">MOLA</p>
+    </div>
+    <div style="display:flex;justify-content:center;position:relative;margin:12px 0 20px;">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="88" fill="none" stroke="#262C3D" stroke-width="10"></circle>
+        <circle id="breakRing" cx="100" cy="100" r="88" fill="none" stroke="#6FCF97" stroke-width="10" stroke-linecap="round" transform="rotate(-90 100 100)"></circle>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <span class="st-num" id="breakClock" style="font-size:34px;font-weight:600;">15:00</span>
+        <span style="font-size:12px;color:#8890A6;margin-top:4px;">kaldÄ±</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:center;margin-bottom:24px;">
+      <button class="st-btn" id="endBreakBtn" style="background:transparent;color:#6FCF97;border:1px solid #6FCF97;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;">MolayÄ± bitir</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+    <div style="background:#1E2330;border-radius:12px;padding:14px 16px;">
+      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">BugÃ¼n Ã§alÄ±ÅŸma</p>
+      <p class="st-num" id="statTodayStudy" style="font-size:22px;font-weight:600;margin:0;">0 dk</p>
+    </div>
+    <div style="background:#1E2330;border-radius:12px;padding:14px 16px;">
+      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">BugÃ¼n mola</p>
+      <p class="st-num" id="statTodayBreak" style="font-size:22px;font-weight:600;margin:0;">0 dk</p>
+    </div>
+    <div style="background:#1E2330;border-radius:12px;padding:14px 16px;">
+      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">Bu hafta Ã§alÄ±ÅŸma</p>
+      <p class="st-num" id="statWeekStudy" style="font-size:22px;font-weight:600;margin:0;">0 dk</p>
+    </div>
+    <div style="background:#1E2330;border-radius:12px;padding:14px 16px;">
+      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">Bu hafta mola</p>
+      <p class="st-num" id="statWeekBreak" style="font-size:22px;font-weight:600;margin:0;">0 dk</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">HaftalÄ±k Ã§alÄ±ÅŸma (dakika)</p>
+    <div id="weekChart" style="display:flex;align-items:flex-end;gap:10px;height:140px;"></div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Konu notlarÄ±</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <input class="st-input" id="hintSubject" placeholder="Ders (Ã¶r. Kimya)" style="width:160px;">
+      <input class="st-input" id="hintTopic" placeholder="Konu (isteÄŸe baÄŸlÄ±, Ã¶r. Mol kavramÄ±)" style="flex:1;min-width:160px;">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <input class="st-input" id="ownNoteInput" placeholder="Notunu yaz ve kaydet" style="flex:1;">
+      <button class="st-btn" id="addNoteBtn" style="background:#262C3D;color:#EDEAE0;border:1px solid #333A4D;border-radius:8px;padding:8px 14px;font-size:13px;">+ Not ekle</button>
+    </div>
+
+    <div id="hintsListWrap" class="hidden" style="border-top:1px solid #262C3D;padding-top:12px;">
+      <p style="font-size:12px;color:#6B7180;margin:0 0 8px;">Kaydedilen notlar</p>
+      <div id="hintsList" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">HatÄ±rlatÄ±cÄ±lar</p>
+    <div id="remindersList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+      <p style="font-size:13px;color:#6B7180;margin:0;">HenÃ¼z hatÄ±rlatÄ±cÄ± eklenmedi.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <select class="st-input" id="reminderDay">
+        <option value="0">Pzt</option><option value="1">Sal</option><option value="2">Ã‡ar</option>
+        <option value="3">Per</option><option value="4">Cum</option><option value="5">Cmt</option><option value="6">Paz</option>
+      </select>
+      <input class="st-input" id="reminderTime" type="time" value="18:00">
+      <input class="st-input" id="reminderSubject" placeholder="Ders adÄ±" style="flex:1;min-width:120px;">
+      <button class="st-btn" id="addReminderBtn" style="background:#6FCF97;color:#14171F;border-radius:8px;padding:8px 14px;">+ Ekle</button>
+    </div>
+    <p style="font-size:11px;color:#6B7180;margin-top:10px;">Not: hatÄ±rlatma bu sayfa tarayÄ±cÄ±da aÃ§Ä±kken Ã§alÄ±ÅŸÄ±r.</p>
+  </div>
+
+  <div class="card" style="margin-bottom:0;">
+    <p class="card-title">GeÃ§miÅŸ oturumlar</p>
+    <div id="sessionsList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;">
+      <p style="font-size:13px;color:#6B7180;margin:0;">HenÃ¼z kayÄ±t yok.</p>
+    </div>
+  </div>
+
+  <p style="font-size:11px;color:#6B7180;text-align:center;margin-top:18px;">TÃ¼m veriler yalnÄ±zca bu tarayÄ±cÄ±da (localStorage) saklanÄ±r.</p>
+</div>
+
+<script>
+(function(){
+  const DAYS = ["Pzt","Sal","Ã‡ar","Per","Cum","Cmt","Paz"];
+  const SUBJECT_COLORS = ["#E8B75E","#6FCF97","#7C9CE0","#E08F7C","#C08FE0","#7CD4E0"];
+  const R = 88, CIRC = 2*Math.PI*R;
+
+  function colorForSubject(name){
+    let hash=0;
+    for(let i=0;i<name.length;i++) hash = name.charCodeAt(i) + ((hash<<5)-hash);
+    return SUBJECT_COLORS[Math.abs(hash)%SUBJECT_COLORS.length];
+  }
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function formatClock(t){
+    const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=t%60;
+    return h>0 ? pad(h)+':'+pad(m)+':'+pad(s) : pad(m)+':'+pad(s);
+  }
+  function formatMinutes(mins){
+    const h=Math.floor(mins/60), m=Math.round(mins%60);
+    return h===0 ? m+' dk' : h+' sa '+m+' dk';
+  }
+  function isoDay(d){ return d.toISOString().slice(0,10); }
+  function mondayIndex(d){ return (d.getDay()+6)%7; }
+  function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+  function load(key, fallback){
+    try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch(e){ return fallback; }
+  }
+  function save(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+
+  let sessions = load('study-sessions', []);
+  let reminders = load('study-reminders', []);
+  let breaks = load('study-breaks', []);
+  let hints = load('study-hints', []);
+
+  let elapsed = 0, isRunning = false, timerId = null;
+  const triggeredHours = new Set();
+  let breakStatus = 'idle';
+  let breakSecondsLeft = 900, breakTimerId = null;
+  const shownReminders = new Set();
+
+  const $ = id => document.getElementById(id);
+
+  $('studyRing').style.strokeDasharray = CIRC;
+  $('breakRing').style.strokeDasharray = CIRC;
+
+  function renderStudyRing(){
+    const frac = (elapsed % 1500) / 1500;
+    $('studyRing').style.strokeDashoffset = CIRC * (1 - frac);
+    $('studyClock').textContent = formatClock(elapsed);
+    $('studyState').textContent = isRunning ? 'Ã§alÄ±ÅŸÄ±yor' : (elapsed>0 ? 'duraklatÄ±ldÄ±' : 'hazÄ±r');
+  }
+  function renderBreakRing(){
+    $('breakRing').style.strokeDashoffset = CIRC * (1 - breakSecondsLeft/900);
+    $('breakClock').textContent = formatClock(breakSecondsLeft);
+  }
+
+  function tick(){
+    elapsed++;
+    if(elapsed>0 && elapsed%3600===0 && !triggeredHours.has(elapsed)){
+      triggeredHours.add(elapsed);
+      isRunning = false;
+      clearInterval(timerId);
+      $('breakSuggestBanner').classList.remove('hidden');
+    }
+    renderStudyRing();
+  }
+
+  function updateStartBtn(){
+    const subj = $('subjectInput').value.trim();
+    $('startPauseBtn').innerHTML = isRunning ? 'Duraklat' : 'BaÅŸla';
+    $('startPauseBtn').disabled = (!isRunning && !subj);
+    $('finishBtn').disabled = elapsed===0;
+    $('resetTimerBtn').disabled = elapsed===0;
+    $('subjectInput').disabled = isRunning;
+  }
+
+  $('subjectInput').addEventListener('input', updateStartBtn);
+
+  $('startPauseBtn').addEventListener('click', () => {
+    if(!isRunning && !$('subjectInput').value.trim()) return;
+    isRunning = !isRunning;
+    if(isRunning){ timerId = setInterval(tick, 1000); }
+    else { clearInterval(timerId); }
+    updateStartBtn();
+    renderStudyRing();
+  });
+
+  $('finishBtn').addEventListener('click', () => {
+    if(elapsed < 5){ isRunning=false; clearInterval(timerId); elapsed=0; renderStudyRing(); updateStartBtn(); return; }
+    const minutes = Math.round(elapsed/60);
+    const subject = $('subjectInput').value.trim() || 'Genel';
+    sessions.unshift({ id: Date.now(), subject, minutes, date: isoDay(new Date()) });
+    save('study-sessions', sessions);
+    isRunning=false; clearInterval(timerId); elapsed=0;
+    renderStudyRing(); updateStartBtn(); renderStats(); renderSessions(); renderWeekChart();
+  });
+
+  $('resetTimerBtn').addEventListener('click', () => {
+    isRunning=false; clearInterval(timerId); elapsed=0;
+    renderStudyRing(); updateStartBtn();
+  });
+
+  function showBreakView(){
+    $('studyView').classList.add('hidden');
+    $('breakView').classList.remove('hidden');
+  }
+  function showStudyView(){
+    $('breakView').classList.add('hidden');
+    $('studyView').classList.remove('hidden');
+  }
+
+  $('startBreakBtn').addEventListener('click', () => {
+    $('breakSuggestBanner').classList.add('hidden');
+    breakStatus='active'; breakSecondsLeft=900;
+    showBreakView(); renderBreakRing();
+    breakTimerId = setInterval(() => {
+      breakSecondsLeft = Math.max(0, breakSecondsLeft-1);
+      renderBreakRing();
+      if(breakSecondsLeft===0){ finishBreak(15); }
+    }, 1000);
+  });
+
+  $('dismissBreakBtn').addEventListener('click', () => {
+    $('breakSuggestBanner').classList.add('hidden');
+    isRunning = true;
+    timerId = setInterval(tick, 1000);
+    updateStartBtn();
+  });
+
+  function finishBreak(minutes){
+    clearInterval(breakTimerId);
+    if(minutes>0){
+      breaks.unshift({ id: Date.now(), minutes, date: isoDay(new Date()) });
+      save('study-breaks', breaks);
+    }
+    breakStatus='idle'; breakSecondsLeft=900;
+    showStudyView();
+    isRunning = true;
+    timerId = setInterval(tick, 1000);
+    updateStartBtn(); renderStudyRing(); renderStats();
+  }
+
+  $('endBreakBtn').addEventListener('click', () => {
+    const elapsedBreak = 900 - breakSecondsLeft;
+    finishBreak(elapsedBreak>=30 ? Math.round(elapsedBreak/60) : 0);
+  });
+
+  // Reminders
+  function renderReminders(){
+    const wrap = $('remindersList');
+    if(reminders.length===0){
+      wrap.innerHTML = '<p style="font-size:13px;color:#6B7180;margin:0;">HenÃ¼z hatÄ±rlatÄ±cÄ± eklenmedi.</p>';
+      return;
+    }
+    wrap.innerHTML = '';
+    reminders.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'row-item';
+      row.innerHTML = '<span><strong>'+DAYS[r.day]+'</strong> '+r.time+' â€” '+escapeHtml(r.subject)+'</span>';
+      const del = document.createElement('button');
+      del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
+      del.textContent='âœ•';
+      del.addEventListener('click', () => {
+        reminders = reminders.filter(x=>x.id!==r.id);
+        save('study-reminders', reminders);
+        renderReminders();
+      });
+      row.appendChild(del);
+      wrap.appendChild(row);
+    });
+  }
+
+  $('addReminderBtn').addEventListener('click', () => {
+    const subj = $('reminderSubject').value.trim();
+    if(!subj) return;
+    reminders.push({ id: Date.now(), day: Number($('reminderDay').value), time: $('reminderTime').value, subject: subj });
+    save('study-reminders', reminders);
+    $('reminderSubject').value='';
+    renderReminders();
+  });
+
+  setInterval(() => {
+    const now = new Date();
+    const day = mondayIndex(now);
+    const current = pad(now.getHours())+':'+pad(now.getMinutes());
+    reminders.forEach(r => {
+      const key = r.id+'-'+isoDay(now);
+      if(r.day===day && r.time===current && !shownReminders.has(key)){
+        shownReminders.add(key);
+        $('dueReminderText').innerHTML = 'HatÄ±rlatma: <strong>'+escapeHtml(r.subject)+'</strong> Ã§alÄ±ÅŸma vaktin geldi';
+        $('dueReminderBanner').classList.remove('hidden');
+      }
+    });
+  }, 15000);
+
+  $('dismissReminderBtn').addEventListener('click', () => $('dueReminderBanner').classList.add('hidden'));
+
+  // Stats + chart
+  function renderStats(){
+    const today = isoDay(new Date());
+    const todayStudy = sessions.filter(s=>s.date===today).reduce((a,s)=>a+s.minutes,0);
+    const todayBreak = breaks.filter(b=>b.date===today).reduce((a,b)=>a+b.minutes,0);
+
+    const now = new Date();
+    const monday = new Date(now); monday.setDate(now.getDate()-mondayIndex(now));
+    const mondayISO = isoDay(monday);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+    const sundayISO = isoDay(sunday);
+    const weekStudy = sessions.filter(s=>s.date>=mondayISO && s.date<=sundayISO).reduce((a,s)=>a+s.minutes,0);
+    const weekBreak = breaks.filter(b=>b.date>=mondayISO && b.date<=sundayISO).reduce((a,b)=>a+b.minutes,0);
+
+    $('statTodayStudy').textContent = formatMinutes(todayStudy);
+    $('statTodayBreak').textContent = formatMinutes(todayBreak);
+    $('statWeekStudy').textContent = formatMinutes(weekStudy);
+    $('statWeekBreak').textContent = formatMinutes(weekBreak);
+  }
+
+  function renderWeekChart(){
+    const now = new Date();
+    const monday = new Date(now); monday.setDate(now.getDate()-mondayIndex(now));
+    const days = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(monday); d.setDate(monday.getDate()+i);
+      const dISO = isoDay(d);
+      const mins = sessions.filter(s=>s.date===dISO).reduce((a,s)=>a+s.minutes,0);
+      days.push({ label: DAYS[i], mins });
+    }
+    const max = Math.max(30, ...days.map(d=>d.mins));
+    const wrap = $('weekChart');
+    wrap.innerHTML = '';
+    days.forEach(d => {
+      const col = document.createElement('div');
+      col.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;';
+      const barBox = document.createElement('div');
+      barBox.style.cssText = 'width:100%;height:110px;display:flex;align-items:flex-end;';
+      const bar = document.createElement('div');
+      const h = Math.max(2, Math.round((d.mins/max)*110));
+      bar.style.cssText = 'width:100%;height:'+h+'px;background:#E8B75E;border-radius:4px 4px 0 0;';
+      bar.title = d.mins+' dk';
+      barBox.appendChild(bar);
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size:12px;color:#8890A6;';
+      label.textContent = d.label;
+      col.appendChild(barBox);
+      col.appendChild(label);
+      wrap.appendChild(col);
+    });
+  }
+
+  function renderSessions(){
+    const wrap = $('sessionsList');
+    if(sessions.length===0){
+      wrap.innerHTML = '<p style="font-size:13px;color:#6B7180;margin:0;">HenÃ¼z kayÄ±t yok.</p>';
+      return;
+    }
+    wrap.innerHTML = '';
+    sessions.slice(0,30).forEach(s => {
+      const row = document.createElement('div');
+      row.className='row-item';
+      row.innerHTML =
+        '<div style="display:flex;align-items:center;gap:8px;">'+
+          '<span style="width:8px;height:8px;border-radius:50%;background:'+colorForSubject(s.subject)+';"></span>'+
+          '<span>'+escapeHtml(s.subject)+'</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:10px;">'+
+          '<span style="color:#8890A6;">'+s.date+'</span>'+
+          '<span>'+formatMinutes(s.minutes)+'</span>'+
+        '</div>';
+      const del = document.createElement('button');
+      del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
+      del.textContent='âœ•';
+      del.addEventListener('click', () => {
+        sessions = sessions.filter(x=>x.id!==s.id);
+        save('study-sessions', sessions);
+        renderSessions(); renderStats(); renderWeekChart();
+      });
+      row.lastElementChild.appendChild(del);
+      wrap.appendChild(row);
+    });
+  }
+
+  // Notes
+  function renderHints(){
+    const wrap = $('hintsList');
+    const wrapOuter = $('hintsListWrap');
+    if(hints.length===0){ wrapOuter.classList.add('hidden'); return; }
+    wrapOuter.classList.remove('hidden');
+    wrap.innerHTML = '';
+    hints.forEach(h => {
+      const box = document.createElement('div');
+      box.style.cssText='background:#262C3D;border-radius:8px;padding:10px 12px;';
+      const subjPart = h.subject ? (' â€” '+escapeHtml(h.subject)+(h.topic?(': '+escapeHtml(h.topic)):'')) : '';
+      box.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'+
+          '<span style="font-size:12px;color:#6FCF97;font-weight:600;">Not'+subjPart+'</span>'+
+          '<div style="display:flex;align-items:center;gap:8px;">'+
+            '<span style="font-size:11px;color:#6B7180;">'+h.date+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<p style="font-size:13px;line-height:1.5;margin:0;white-space:pre-wrap;">'+escapeHtml(h.text)+'</p>';
+      const del = document.createElement('button');
+      del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
+      del.textContent='âœ•';
+      del.addEventListener('click', () => {
+        hints = hints.filter(x=>x.id!==h.id);
+        save('study-hints', hints);
+        renderHints();
+      });
+      box.querySelector('div').lastElementChild.appendChild(del);
+      wrap.appendChild(box);
+    });
+  }
+
+  $('addNoteBtn').addEventListener('click', () => {
+    const text = $('ownNoteInput').value.trim();
+    if(!text) return;
+    hints.unshift({
+      id: Date.now(), type:'not',
+      subject: $('hintSubject').value.trim(),
+      topic: $('hintTopic').value.trim(),
+      text, date: isoDay(new Date())
+    });
+    save('study-hints', hints);
+    $('ownNoteInput').value='';
+    renderHints();
+  });
+
+  // init
+  updateStartBtn();
+  renderStudyRing();
+  renderBreakRing();
+  renderReminders();
+  renderStats();
+  renderWeekChart();
+  renderSessions();
+  renderHints();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

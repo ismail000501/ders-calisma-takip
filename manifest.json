@@ -1,0 +1,11 @@
+{
+  "name": "Ders Çalışma Takip",
+  "short_name": "Ders Takip",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0c0e13",
+  "theme_color": "#14171F",
+  "orientation": "portrait",
+  "lang": "tr",
+  "icons": []
+}
