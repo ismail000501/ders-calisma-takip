@@ -32,29 +32,8 @@
   .card-title{ font-size:13px; color:#8890A6; margin:0 0 12px; display:flex; align-items:center; gap:6px; }
   .icon{ width:14px; height:14px; display:inline-flex; }
   .icon svg{ width:100%; height:100%; }
-
-/* iPhone / PWA */
-html { background:#0c0e13; }
-body {
-  min-height:100vh;
-  min-height:100dvh;
-  padding-top:max(16px, env(safe-area-inset-top));
-  padding-bottom:max(24px, env(safe-area-inset-bottom));
-  padding-left:max(12px, env(safe-area-inset-left));
-  padding-right:max(12px, env(safe-area-inset-right));
-}
-.app { -webkit-tap-highlight-color:transparent; }
-.st-input { font-size:16px; } /* prevents Safari auto-zoom on focus */
-button, input, select, textarea { -webkit-appearance:none; }
-@media (max-width:480px){
-  .app { border-radius:14px; padding:22px 16px 28px; }
-  svg { max-width:100%; height:auto; }
-}
-
 </style>
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <meta name="theme-color" content="#14171F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -65,10 +44,10 @@ button, input, select, textarea { -webkit-appearance:none; }
 
   <div id="dueReminderBanner" class="hidden" style="background:#2A2416;border:1px solid #E8B75E;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <span style="color:#E8B75E;">🔔</span>
+      <span style="color:#E8B75E;">ğŸ””</span>
       <span style="font-size:14px;" id="dueReminderText"></span>
     </div>
-    <button class="st-btn" id="dismissReminderBtn" style="background:transparent;color:#8890A6;">✕</button>
+    <button class="st-btn" id="dismissReminderBtn" style="background:transparent;color:#8890A6;">âœ•</button>
   </div>
 
   <div id="breakSuggestBanner" class="hidden" style="background:#16261E;border:1px solid #6FCF97;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -99,7 +78,7 @@ button, input, select, textarea { -webkit-appearance:none; }
     <div style="display:flex;gap:10px;justify-content:center;margin-bottom:24px;">
       <button class="st-btn" id="startPauseBtn" style="background:#E8B75E;color:#14171F;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;">Başla</button>
       <button class="st-btn" id="finishBtn" style="background:#6FCF97;color:#14171F;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;" disabled>Bitir ve Kaydet</button>
-      <button class="st-btn" id="resetTimerBtn" style="background:#262C3D;color:#EDEAE0;border-radius:10px;padding:10px 14px;" disabled>↺</button>
+      <button class="st-btn" id="resetTimerBtn" style="background:#262C3D;color:#EDEAE0;border-radius:10px;padding:10px 14px;" disabled>â†º</button>
     </div>
   </div>
 
@@ -350,10 +329,10 @@ button, input, select, textarea { -webkit-appearance:none; }
     reminders.forEach(r => {
       const row = document.createElement('div');
       row.className = 'row-item';
-      row.innerHTML = '<span><strong>'+DAYS[r.day]+'</strong> '+r.time+' — '+escapeHtml(r.subject)+'</span>';
+      row.innerHTML = '<span><strong>'+DAYS[r.day]+'</strong> '+r.time+' â€” '+escapeHtml(r.subject)+'</span>';
       const del = document.createElement('button');
       del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
-      del.textContent='✕';
+      del.textContent='âœ•';
       del.addEventListener('click', () => {
         reminders = reminders.filter(x=>x.id!==r.id);
         save('study-reminders', reminders);
@@ -462,7 +441,7 @@ button, input, select, textarea { -webkit-appearance:none; }
         '</div>';
       const del = document.createElement('button');
       del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
-      del.textContent='✕';
+      del.textContent='âœ•';
       del.addEventListener('click', () => {
         sessions = sessions.filter(x=>x.id!==s.id);
         save('study-sessions', sessions);
@@ -483,7 +462,7 @@ button, input, select, textarea { -webkit-appearance:none; }
     hints.forEach(h => {
       const box = document.createElement('div');
       box.style.cssText='background:#262C3D;border-radius:8px;padding:10px 12px;';
-      const subjPart = h.subject ? (' — '+escapeHtml(h.subject)+(h.topic?(': '+escapeHtml(h.topic)):'')) : '';
+      const subjPart = h.subject ? (' â€” '+escapeHtml(h.subject)+(h.topic?(': '+escapeHtml(h.topic)):'')) : '';
       box.innerHTML =
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'+
           '<span style="font-size:12px;color:#6FCF97;font-weight:600;">Not'+subjPart+'</span>'+
@@ -494,7 +473,7 @@ button, input, select, textarea { -webkit-appearance:none; }
         '<p style="font-size:13px;line-height:1.5;margin:0;white-space:pre-wrap;">'+escapeHtml(h.text)+'</p>';
       const del = document.createElement('button');
       del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
-      del.textContent='✕';
+      del.textContent='âœ•';
       del.addEventListener('click', () => {
         hints = hints.filter(x=>x.id!==h.id);
         save('study-hints', hints);
