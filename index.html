@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ders Ã‡alÄ±ÅŸma Takip</title>
+<title>Ders Çalışma Takip</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -32,8 +32,29 @@
   .card-title{ font-size:13px; color:#8890A6; margin:0 0 12px; display:flex; align-items:center; gap:6px; }
   .icon{ width:14px; height:14px; display:inline-flex; }
   .icon svg{ width:100%; height:100%; }
+
+/* iPhone / PWA */
+html { background:#0c0e13; }
+body {
+  min-height:100vh;
+  min-height:100dvh;
+  padding-top:max(16px, env(safe-area-inset-top));
+  padding-bottom:max(24px, env(safe-area-inset-bottom));
+  padding-left:max(12px, env(safe-area-inset-left));
+  padding-right:max(12px, env(safe-area-inset-right));
+}
+.app { -webkit-tap-highlight-color:transparent; }
+.st-input { font-size:16px; } /* prevents Safari auto-zoom on focus */
+button, input, select, textarea { -webkit-appearance:none; }
+@media (max-width:480px){
+  .app { border-radius:14px; padding:22px 16px 28px; }
+  svg { max-width:100%; height:auto; }
+}
+
 </style>
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <meta name="theme-color" content="#14171F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -44,23 +65,23 @@
 
   <div id="dueReminderBanner" class="hidden" style="background:#2A2416;border:1px solid #E8B75E;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <span style="color:#E8B75E;">ğŸ””</span>
+      <span style="color:#E8B75E;">🔔</span>
       <span style="font-size:14px;" id="dueReminderText"></span>
     </div>
-    <button class="st-btn" id="dismissReminderBtn" style="background:transparent;color:#8890A6;">âœ•</button>
+    <button class="st-btn" id="dismissReminderBtn" style="background:transparent;color:#8890A6;">✕</button>
   </div>
 
   <div id="breakSuggestBanner" class="hidden" style="background:#16261E;border:1px solid #6FCF97;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-    <span style="font-size:14px;">1 saat Ã§alÄ±ÅŸtÄ±n. 15 dakika mola zamanÄ±!</span>
+    <span style="font-size:14px;">1 saat çalıştın. 15 dakika mola zamanı!</span>
     <div style="display:flex;gap:8px;">
-      <button class="st-btn" id="startBreakBtn" style="background:#6FCF97;color:#14171F;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;">Molaya baÅŸla</button>
+      <button class="st-btn" id="startBreakBtn" style="background:#6FCF97;color:#14171F;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;">Molaya başla</button>
       <button class="st-btn" id="dismissBreakBtn" style="background:transparent;color:#8890A6;border:1px solid #333A4D;border-radius:8px;padding:6px 12px;font-size:13px;">Devam et</button>
     </div>
   </div>
 
   <div id="studyView">
     <div style="text-align:center;margin-bottom:8px;">
-      <p style="font-size:13px;color:#8890A6;margin:0 0 4px;letter-spacing:.03em;">DERS Ã‡ALIÅMA SAYACI</p>
+      <p style="font-size:13px;color:#8890A6;margin:0 0 4px;letter-spacing:.03em;">DERS ÇALIŞMA SAYACI</p>
     </div>
     <div style="display:flex;justify-content:center;position:relative;margin:12px 0 20px;">
       <svg width="200" height="200" viewBox="0 0 200 200">
@@ -69,16 +90,16 @@
       </svg>
       <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
         <span class="st-num" id="studyClock" style="font-size:34px;font-weight:600;">00:00</span>
-        <span style="font-size:12px;color:#8890A6;margin-top:4px;" id="studyState">hazÄ±r</span>
+        <span style="font-size:12px;color:#8890A6;margin-top:4px;" id="studyState">hazır</span>
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
-      <input class="st-input" id="subjectInput" placeholder="Ne Ã§alÄ±ÅŸÄ±yorsun? (Ã¶r. Matematik)" style="width:220px;">
+      <input class="st-input" id="subjectInput" placeholder="Ne çalışıyorsun? (ör. Matematik)" style="width:220px;">
     </div>
     <div style="display:flex;gap:10px;justify-content:center;margin-bottom:24px;">
-      <button class="st-btn" id="startPauseBtn" style="background:#E8B75E;color:#14171F;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;">BaÅŸla</button>
+      <button class="st-btn" id="startPauseBtn" style="background:#E8B75E;color:#14171F;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;">Başla</button>
       <button class="st-btn" id="finishBtn" style="background:#6FCF97;color:#14171F;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;" disabled>Bitir ve Kaydet</button>
-      <button class="st-btn" id="resetTimerBtn" style="background:#262C3D;color:#EDEAE0;border-radius:10px;padding:10px 14px;" disabled>â†º</button>
+      <button class="st-btn" id="resetTimerBtn" style="background:#262C3D;color:#EDEAE0;border-radius:10px;padding:10px 14px;" disabled>↺</button>
     </div>
   </div>
 
@@ -93,25 +114,25 @@
       </svg>
       <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
         <span class="st-num" id="breakClock" style="font-size:34px;font-weight:600;">15:00</span>
-        <span style="font-size:12px;color:#8890A6;margin-top:4px;">kaldÄ±</span>
+        <span style="font-size:12px;color:#8890A6;margin-top:4px;">kaldı</span>
       </div>
     </div>
     <div style="display:flex;justify-content:center;margin-bottom:24px;">
-      <button class="st-btn" id="endBreakBtn" style="background:transparent;color:#6FCF97;border:1px solid #6FCF97;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;">MolayÄ± bitir</button>
+      <button class="st-btn" id="endBreakBtn" style="background:transparent;color:#6FCF97;border:1px solid #6FCF97;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;">Molayı bitir</button>
     </div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
     <div style="background:#1E2330;border-radius:12px;padding:14px 16px;">
-      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">BugÃ¼n Ã§alÄ±ÅŸma</p>
+      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">Bugün çalışma</p>
       <p class="st-num" id="statTodayStudy" style="font-size:22px;font-weight:600;margin:0;">0 dk</p>
     </div>
     <div style="background:#1E2330;border-radius:12px;padding:14px 16px;">
-      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">BugÃ¼n mola</p>
+      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">Bugün mola</p>
       <p class="st-num" id="statTodayBreak" style="font-size:22px;font-weight:600;margin:0;">0 dk</p>
     </div>
     <div style="background:#1E2330;border-radius:12px;padding:14px 16px;">
-      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">Bu hafta Ã§alÄ±ÅŸma</p>
+      <p style="font-size:12px;color:#8890A6;margin:0 0 4px;">Bu hafta çalışma</p>
       <p class="st-num" id="statWeekStudy" style="font-size:22px;font-weight:600;margin:0;">0 dk</p>
     </div>
     <div style="background:#1E2330;border-radius:12px;padding:14px 16px;">
@@ -121,15 +142,15 @@
   </div>
 
   <div class="card">
-    <p class="card-title">HaftalÄ±k Ã§alÄ±ÅŸma (dakika)</p>
+    <p class="card-title">Haftalık çalışma (dakika)</p>
     <div id="weekChart" style="display:flex;align-items:flex-end;gap:10px;height:140px;"></div>
   </div>
 
   <div class="card">
-    <p class="card-title">Konu notlarÄ±</p>
+    <p class="card-title">Konu notları</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-      <input class="st-input" id="hintSubject" placeholder="Ders (Ã¶r. Kimya)" style="width:160px;">
-      <input class="st-input" id="hintTopic" placeholder="Konu (isteÄŸe baÄŸlÄ±, Ã¶r. Mol kavramÄ±)" style="flex:1;min-width:160px;">
+      <input class="st-input" id="hintSubject" placeholder="Ders (ör. Kimya)" style="width:160px;">
+      <input class="st-input" id="hintTopic" placeholder="Konu (isteğe bağlı, ör. Mol kavramı)" style="flex:1;min-width:160px;">
     </div>
 
     <div style="display:flex;gap:8px;margin-bottom:14px;">
@@ -144,35 +165,35 @@
   </div>
 
   <div class="card">
-    <p class="card-title">HatÄ±rlatÄ±cÄ±lar</p>
+    <p class="card-title">Hatırlatıcılar</p>
     <div id="remindersList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-      <p style="font-size:13px;color:#6B7180;margin:0;">HenÃ¼z hatÄ±rlatÄ±cÄ± eklenmedi.</p>
+      <p style="font-size:13px;color:#6B7180;margin:0;">Henüz hatırlatıcı eklenmedi.</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <select class="st-input" id="reminderDay">
-        <option value="0">Pzt</option><option value="1">Sal</option><option value="2">Ã‡ar</option>
+        <option value="0">Pzt</option><option value="1">Sal</option><option value="2">Çar</option>
         <option value="3">Per</option><option value="4">Cum</option><option value="5">Cmt</option><option value="6">Paz</option>
       </select>
       <input class="st-input" id="reminderTime" type="time" value="18:00">
-      <input class="st-input" id="reminderSubject" placeholder="Ders adÄ±" style="flex:1;min-width:120px;">
+      <input class="st-input" id="reminderSubject" placeholder="Ders adı" style="flex:1;min-width:120px;">
       <button class="st-btn" id="addReminderBtn" style="background:#6FCF97;color:#14171F;border-radius:8px;padding:8px 14px;">+ Ekle</button>
     </div>
-    <p style="font-size:11px;color:#6B7180;margin-top:10px;">Not: hatÄ±rlatma bu sayfa tarayÄ±cÄ±da aÃ§Ä±kken Ã§alÄ±ÅŸÄ±r.</p>
+    <p style="font-size:11px;color:#6B7180;margin-top:10px;">Not: hatırlatma bu sayfa tarayıcıda açıkken çalışır.</p>
   </div>
 
   <div class="card" style="margin-bottom:0;">
-    <p class="card-title">GeÃ§miÅŸ oturumlar</p>
+    <p class="card-title">Geçmiş oturumlar</p>
     <div id="sessionsList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;">
-      <p style="font-size:13px;color:#6B7180;margin:0;">HenÃ¼z kayÄ±t yok.</p>
+      <p style="font-size:13px;color:#6B7180;margin:0;">Henüz kayıt yok.</p>
     </div>
   </div>
 
-  <p style="font-size:11px;color:#6B7180;text-align:center;margin-top:18px;">TÃ¼m veriler yalnÄ±zca bu tarayÄ±cÄ±da (localStorage) saklanÄ±r.</p>
+  <p style="font-size:11px;color:#6B7180;text-align:center;margin-top:18px;">Tüm veriler yalnızca bu tarayıcıda (localStorage) saklanır.</p>
 </div>
 
 <script>
 (function(){
-  const DAYS = ["Pzt","Sal","Ã‡ar","Per","Cum","Cmt","Paz"];
+  const DAYS = ["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"];
   const SUBJECT_COLORS = ["#E8B75E","#6FCF97","#7C9CE0","#E08F7C","#C08FE0","#7CD4E0"];
   const R = 88, CIRC = 2*Math.PI*R;
 
@@ -220,7 +241,7 @@
     const frac = (elapsed % 1500) / 1500;
     $('studyRing').style.strokeDashoffset = CIRC * (1 - frac);
     $('studyClock').textContent = formatClock(elapsed);
-    $('studyState').textContent = isRunning ? 'Ã§alÄ±ÅŸÄ±yor' : (elapsed>0 ? 'duraklatÄ±ldÄ±' : 'hazÄ±r');
+    $('studyState').textContent = isRunning ? 'çalışıyor' : (elapsed>0 ? 'duraklatıldı' : 'hazır');
   }
   function renderBreakRing(){
     $('breakRing').style.strokeDashoffset = CIRC * (1 - breakSecondsLeft/900);
@@ -240,7 +261,7 @@
 
   function updateStartBtn(){
     const subj = $('subjectInput').value.trim();
-    $('startPauseBtn').innerHTML = isRunning ? 'Duraklat' : 'BaÅŸla';
+    $('startPauseBtn').innerHTML = isRunning ? 'Duraklat' : 'Başla';
     $('startPauseBtn').disabled = (!isRunning && !subj);
     $('finishBtn').disabled = elapsed===0;
     $('resetTimerBtn').disabled = elapsed===0;
@@ -322,17 +343,17 @@
   function renderReminders(){
     const wrap = $('remindersList');
     if(reminders.length===0){
-      wrap.innerHTML = '<p style="font-size:13px;color:#6B7180;margin:0;">HenÃ¼z hatÄ±rlatÄ±cÄ± eklenmedi.</p>';
+      wrap.innerHTML = '<p style="font-size:13px;color:#6B7180;margin:0;">Henüz hatırlatıcı eklenmedi.</p>';
       return;
     }
     wrap.innerHTML = '';
     reminders.forEach(r => {
       const row = document.createElement('div');
       row.className = 'row-item';
-      row.innerHTML = '<span><strong>'+DAYS[r.day]+'</strong> '+r.time+' â€” '+escapeHtml(r.subject)+'</span>';
+      row.innerHTML = '<span><strong>'+DAYS[r.day]+'</strong> '+r.time+' — '+escapeHtml(r.subject)+'</span>';
       const del = document.createElement('button');
       del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
-      del.textContent='âœ•';
+      del.textContent='✕';
       del.addEventListener('click', () => {
         reminders = reminders.filter(x=>x.id!==r.id);
         save('study-reminders', reminders);
@@ -360,7 +381,7 @@
       const key = r.id+'-'+isoDay(now);
       if(r.day===day && r.time===current && !shownReminders.has(key)){
         shownReminders.add(key);
-        $('dueReminderText').innerHTML = 'HatÄ±rlatma: <strong>'+escapeHtml(r.subject)+'</strong> Ã§alÄ±ÅŸma vaktin geldi';
+        $('dueReminderText').innerHTML = 'Hatırlatma: <strong>'+escapeHtml(r.subject)+'</strong> çalışma vaktin geldi';
         $('dueReminderBanner').classList.remove('hidden');
       }
     });
@@ -423,7 +444,7 @@
   function renderSessions(){
     const wrap = $('sessionsList');
     if(sessions.length===0){
-      wrap.innerHTML = '<p style="font-size:13px;color:#6B7180;margin:0;">HenÃ¼z kayÄ±t yok.</p>';
+      wrap.innerHTML = '<p style="font-size:13px;color:#6B7180;margin:0;">Henüz kayıt yok.</p>';
       return;
     }
     wrap.innerHTML = '';
@@ -441,7 +462,7 @@
         '</div>';
       const del = document.createElement('button');
       del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
-      del.textContent='âœ•';
+      del.textContent='✕';
       del.addEventListener('click', () => {
         sessions = sessions.filter(x=>x.id!==s.id);
         save('study-sessions', sessions);
@@ -462,7 +483,7 @@
     hints.forEach(h => {
       const box = document.createElement('div');
       box.style.cssText='background:#262C3D;border-radius:8px;padding:10px 12px;';
-      const subjPart = h.subject ? (' â€” '+escapeHtml(h.subject)+(h.topic?(': '+escapeHtml(h.topic)):'')) : '';
+      const subjPart = h.subject ? (' — '+escapeHtml(h.subject)+(h.topic?(': '+escapeHtml(h.topic)):'')) : '';
       box.innerHTML =
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'+
           '<span style="font-size:12px;color:#6FCF97;font-weight:600;">Not'+subjPart+'</span>'+
@@ -473,7 +494,7 @@
         '<p style="font-size:13px;line-height:1.5;margin:0;white-space:pre-wrap;">'+escapeHtml(h.text)+'</p>';
       const del = document.createElement('button');
       del.className='st-btn'; del.style.background='transparent'; del.style.color='#E08F7C';
-      del.textContent='âœ•';
+      del.textContent='✕';
       del.addEventListener('click', () => {
         hints = hints.filter(x=>x.id!==h.id);
         save('study-hints', hints);
