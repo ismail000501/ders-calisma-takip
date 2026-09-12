@@ -53,10 +53,10 @@
       const [theme, setTheme] = useState("dark");
       const [sessions, setSessions] = useState([]);
       
-      // Mod Seçimi: "kronometre" veya "pomodoro"
+      // Mod Seçimi
       const [mode, setMode] = useState("kronometre");
       
-      // Ders Sayaç State'leri (Kronometre)
+      // Ders Kronometre State'leri
       const [subject, setSubject] = useState("");
       const [isRunning, setIsRunning] = useState(false);
       const [elapsed, setElapsed] = useState(0);
@@ -69,15 +69,15 @@
       const [pomoSubject, setPomoSubject] = useState("");
       const pomoTickRef = useRef(null);
 
-      // Paragraf Sayaç State'leri
+      // Paragraf Kronometre State'leri
       const [pIsRunning, setPIsRunning] = useState(false);
       const [pElapsed, setPElapsed] = useState(0);
       const [pCount, setPCount] = useState(0);
       const pTickRef = useRef(null);
 
-      // Hedefler
-      const [targetStudyMins, setTargetStudyMins] = useState(180); // 3 saat
-      const [targetParagraphs, setTargetParagraphs] = useState(50);
+      // Kullanıcının Kendi Belirleyeceği Hedefler
+      const [targetStudyMins, setTargetStudyMins] = useState(180); // dakika cinsinden
+      const [targetParagraphs, setTargetParagraphs] = useState(50); // soru adedi
 
       useEffect(() => {
         (async () => {
@@ -86,15 +86,15 @@
             if (t) setTheme(t);
           } catch (e) {}
           try {
-            const s = localStorage.getItem("study-sessions-v5");
+            const s = localStorage.getItem("study-sessions-v6");
             if (s) setSessions(JSON.parse(s));
           } catch (e) {}
           try {
-            const ts = localStorage.getItem("study-target-mins");
+            const ts = localStorage.getItem("study-target-mins-v2");
             if (ts) setTargetStudyMins(Number(ts));
           } catch (e) {}
           try {
-            const tp = localStorage.getItem("study-target-p");
+            const tp = localStorage.getItem("study-target-p-v2");
             if (tp) setTargetParagraphs(Number(tp));
           } catch (e) {}
           setLoaded(true);
@@ -109,10 +109,22 @@
 
       const saveSessions = useCallback((next) => {
         setSessions(next);
-        try { localStorage.setItem("study-sessions-v5", JSON.stringify(next)); } catch (e) {}
+        try { localStorage.setItem("study-sessions-v6", JSON.stringify(next)); } catch (e) {}
       }, []);
 
-      // Ders Sayacı Interval (Kronometre)
+      const updateTargetMins = (val) => {
+        const v = Math.max(10, val);
+        setTargetStudyMins(v);
+        try { localStorage.setItem("study-target-mins-v2", String(v)); } catch (e) {}
+      };
+
+      const updateTargetParagraphs = (val) => {
+        const v = Math.max(5, val);
+        setTargetParagraphs(v);
+        try { localStorage.setItem("study-target-p-v2", String(v)); } catch (e) {}
+      };
+
+      // Ders Kronometre Interval
       useEffect(() => {
         if (isRunning) {
           tickRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -129,7 +141,7 @@
             setPomoSecondsLeft((s) => {
               if (s <= 1) {
                 setIsPomoRunning(false);
-                alert("Pomodoro süresi bitti! Harika iş çıkar tın.");
+                alert("Pomodoro süresi bitti! Harika iş çıkardın.");
                 return 0;
               }
               return s - 1;
@@ -141,7 +153,7 @@
         return () => clearInterval(pomoTickRef.current);
       }, [isPomoRunning]);
 
-      // Paragraf Sayacı Interval
+      // Paragraf Kronometre Interval
       useEffect(() => {
         if (pIsRunning) {
           pTickRef.current = setInterval(() => setPElapsed((e) => e + 1), 1000);
@@ -181,7 +193,6 @@
         setElapsed(0);
       };
 
-      // Pomodoro Kontrolleri
       const selectPomoTime = (mins) => {
         setIsPomoRunning(false);
         setPomoMinutes(mins);
@@ -251,7 +262,6 @@
       const todayParagraphMinutes = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + s.minutes, 0);
       const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
 
-      // Derslere Göre Dağılım Hesaplama
       const subjectDistribution = useMemo(() => {
         const map = {};
         sessions.filter(s => s.type !== "paragraf").forEach(s => {
@@ -324,22 +334,32 @@
             </button>
           </div>
 
-          {/* GÜNLÜK HEDEF İLERLEME ÇUBUĞU */}
+          {/* GÜNLÜK HEDEF VE AYARLAR KARTI */}
           <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "8px" }}>
-              <span style={{ color: textMuted, fontWeight: 500 }}>Günlük Çalışma Hedefi</span>
-              <span style={{ fontWeight: 600 }}>{todayMinutes} dk / {targetStudyMins} dk</span>
-            </div>
-            <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden", marginBottom: "12px" }}>
-              <div style={{ width: `${Math.min(100, (todayMinutes / targetStudyMins) * 100)}%`, background: "#38BDF8", height: "100%", transition: "width 0.3s ease" }}></div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <span style={{ fontSize: "13px", fontWeight: 600, color: textMuted }}>🎯 Günlük Hedefler ve İlerleme</span>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "8px" }}>
-              <span style={{ color: textMuted, fontWeight: 500 }}>Günlük Paragraf Hedefi</span>
-              <span style={{ fontWeight: 600 }}>{todayParagraphCount} soru / {targetParagraphs} soru</span>
+            {/* Ders Hedefi Ayarı */}
+            <div style={{ marginBottom: "14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
+                <span>Çalışma: <strong>{todayMinutes} dk</strong> / <input type="number" value={targetStudyMins} onChange={(e) => updateTargetMins(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "4px", padding: "2px 4px", fontSize: "12px", textAlign: "center" }} /> dk</span>
+                <span style={{ color: textMuted }}>%{Math.round((todayMinutes / targetStudyMins) * 100)}</span>
+              </div>
+              <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
+                <div style={{ width: `${Math.min(100, (todayMinutes / targetStudyMins) * 100)}%`, background: "#38BDF8", height: "100%", transition: "width 0.3s ease" }}></div>
+              </div>
             </div>
-            <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
-              <div style={{ width: `${Math.min(100, (todayParagraphCount / targetParagraphs) * 100)}%`, background: "#2DD4BF", height: "100%", transition: "width 0.3s ease" }}></div>
+
+            {/* Paragraf Hedefi Ayarı */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
+                <span>Paragraf: <strong>{todayParagraphCount} soru</strong> / <input type="number" value={targetParagraphs} onChange={(e) => updateTargetParagraphs(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "4px", padding: "2px 4px", fontSize: "12px", textAlign: "center" }} /> soru</span>
+                <span style={{ color: textMuted }}>%{Math.round((todayParagraphCount / targetParagraphs) * 100)}</span>
+              </div>
+              <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
+                <div style={{ width: `${Math.min(100, (todayParagraphCount / targetParagraphs) * 100)}%`, background: "#2DD4BF", height: "100%", transition: "width 0.3s ease" }}></div>
+              </div>
             </div>
           </div>
 
@@ -355,7 +375,7 @@
           </div>
 
 
-          {/* KRONOMETRE BÖLÜMÜ */}
+          {/* DERS KRONOMETRESİ */}
           {mode === "kronometre" && (
             <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", textAlign: "center" }}>
               <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>DERS ÇALIŞMA KRONOMETRESİ</p>
@@ -416,7 +436,7 @@
           )}
 
 
-          {/* PARAGRAF SAYACI BÖLÜMÜ */}
+          {/* PARAGRAF KRONOMETRESİ */}
           <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", textAlign: "center" }}>
             <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>PARAGRAF / SORU KRONOMETRESİ</p>
             <div style={{ margin: "15px 0", fontSize: "38px", fontWeight: "bold", fontFamily: "serif", color: "#2DD4BF" }}>
