@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ders Çalışma Takip</title>
-  <!-- React ve Babel CDN -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -53,25 +52,7 @@
       const [subject, setSubject] = useState("");
       const [isRunning, setIsRunning] = useState(false);
       const [elapsed, setElapsed] = useState(0);
-      const [dueReminder, setDueReminder] = useState(null);
-      const [newReminderDay, setNewReminderDay] = useState(0);
-      const [newReminderTime, setNewReminderTime] = useState("18:00");
-      const [newReminderSubject, setNewReminderSubject] = useState("");
-      const shownTodayRef = useRef(new Set());
       const tickRef = useRef(null);
-
-      const [hintSubject, setHintSubject] = useState("");
-      const [hintTopic, setHintTopic] = useState("");
-      const [hintText, setHintText] = useState("");
-      const [hintLoading, setHintLoading] = useState(false);
-      const [hintError, setHintError] = useState("");
-      const [savedHints, setSavedHints] = useState([]);
-      const [ownNoteText, setOwnNoteText] = useState("");
-
-      const [breakStatus, setBreakStatus] = useState("idle");
-      const [breakSecondsLeft, setBreakSecondsLeft] = useState(900);
-      const breakTickRef = useRef(null);
-      const triggeredHoursRef = useRef(new Set());
 
       useEffect(() => {
         (async () => {
@@ -91,10 +72,6 @@
             const b = localStorage.getItem("study-breaks");
             if (b) setBreaks(JSON.parse(b));
           } catch (e) {}
-          try {
-            const h = localStorage.getItem("study-hints");
-            if (h) setSavedHints(JSON.parse(h));
-          } catch (e) {}
           setLoaded(true);
         })();
       }, []);
@@ -113,16 +90,6 @@
       const saveReminders = useCallback((next) => {
         setReminders(next);
         try { localStorage.setItem("study-reminders", JSON.stringify(next)); } catch (e) {}
-      }, []);
-
-      const saveBreaks = useCallback((next) => {
-        setBreaks(next);
-        try { localStorage.setItem("study-breaks", JSON.stringify(next)); } catch (e) {}
-      }, []);
-
-      const saveHints = useCallback((next) => {
-        setSavedHints(next);
-        try { localStorage.setItem("study-hints", JSON.stringify(next)); } catch (e) {}
       }, []);
 
       useEffect(() => {
@@ -157,22 +124,7 @@
         setElapsed(0);
       };
 
-      const addReminder = () => {
-        if (!newReminderSubject.trim()) return;
-        const r = { id: Date.now(), day: newReminderDay, time: newReminderTime, subject: newReminderSubject.trim() };
-        saveReminders([...reminders, r]);
-        setNewReminderSubject("");
-      };
-
-      const deleteReminder = (id) => saveReminders(reminders.filter((r) => r.id !== id));
       const deleteSession = (id) => saveSessions(sessions.filter((s) => s.id !== id));
-      const addOwnNote = () => {
-        if (!ownNoteText.trim()) return;
-        const entry = { id: Date.now(), type: "not", subject: hintSubject.trim(), topic: hintTopic.trim(), text: ownNoteText.trim(), date: isoDay(new Date()) };
-        saveHints([entry, ...savedHints]);
-        setOwnNoteText("");
-      };
-      const deleteHint = (id) => saveHints(savedHints.filter((h) => h.id !== id));
 
       const today = isoDay(new Date());
       const todayMinutes = useMemo(() => sessions.filter((s) => s.date === today).reduce((a, s) => a + s.minutes, 0), [sessions, today]);
@@ -207,8 +159,27 @@
 
       return (
         <div style={{ fontFamily: "'Inter', sans-serif", background: bgMain, color: colorMain, borderRadius: "16px", padding: "28px 24px 32px", maxWidth: "720px", margin: "20px auto", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", boxSizing: "border-box" }}>
+          
+          {/* Sağ Üst Tema Butonu */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
-            <button onClick={toggleTheme} style={{ background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "50%", width: "38px", height: "38px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button 
+              onClick={toggleTheme} 
+              style={{ 
+                background: bgCard, 
+                color: colorMain, 
+                border: `1px solid ${borderCard}`, 
+                borderRadius: "50%", 
+                width: "40px", 
+                height: "40px", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                cursor: "pointer",
+                fontSize: "18px",
+                boxShadow: "0 2px 5px rgba(0,0,0,0.1)"
+              }}
+              title="Temayı Değiştir"
+            >
               {isDark ? "🌞" : "🌙"}
             </button>
           </div>
@@ -249,6 +220,19 @@
             <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px" }}>
               <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bu hafta çalışma</p>
               <p style={{ fontSize: "20px", fontWeight: 600, margin: 0 }}>{formatMinutes(weekMinutes)}</p>
+            </div>
+          </div>
+
+          {/* Haftalık Çalışma Çizelgesi */}
+          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
+            <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Haftalık çalışma (dakika)</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", textAlign: "center" }}>
+              {weekData.map((d, i) => (
+                <div key={i} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 4px" }}>
+                  <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 4px" }}>{d.label}</p>
+                  <p style={{ fontSize: "13px", fontWeight: 600, margin: 0 }}>{d.dakika} dk</p>
+                </div>
+              ))}
             </div>
           </div>
 
