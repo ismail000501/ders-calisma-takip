@@ -53,31 +53,35 @@
       const [theme, setTheme] = useState("dark");
       const [sessions, setSessions] = useState([]);
       
-      // Mod Seçimi
       const [mode, setMode] = useState("kronometre");
       
-      // Ders Kronometre State'leri
+      // Ders Kronometre State'leri (Gerçek zaman bazlı)
       const [subject, setSubject] = useState("");
       const [isRunning, setIsRunning] = useState(false);
       const [elapsed, setElapsed] = useState(0);
+      const startTimeRef = useRef(null);
+      const accumulatedTimeRef = useRef(0);
       const tickRef = useRef(null);
 
-      // Pomodoro State'leri
+      // Pomodoro State'leri (Gerçek zaman bazlı)
       const [pomoMinutes, setPomoMinutes] = useState(25);
       const [pomoSecondsLeft, setPomoSecondsLeft] = useState(25 * 60);
       const [isPomoRunning, setIsPomoRunning] = useState(false);
       const [pomoSubject, setPomoSubject] = useState("");
+      const pomoEndTimeRef = useRef(null);
+      const pomoRemainingAtPauseRef = useRef(25 * 60);
       const pomoTickRef = useRef(null);
 
-      // Paragraf Kronometre State'leri
+      // Paragraf Kronometre State'leri (Gerçek zaman bazlı)
       const [pIsRunning, setPIsRunning] = useState(false);
       const [pElapsed, setPElapsed] = useState(0);
       const [pCount, setPCount] = useState(0);
+      const pStartTimeRef = useRef(null);
+      const pAccumulatedTimeRef = useRef(0);
       const pTickRef = useRef(null);
 
-      // Kullanıcının Kendi Belirleyeceği Hedefler
-      const [targetStudyMins, setTargetStudyMins] = useState(180); // dakika cinsinden
-      const [targetParagraphs, setTargetParagraphs] = useState(50); // soru adedi
+      const [targetStudyMins, setTargetStudyMins] = useState(180);
+      const [targetParagraphs, setTargetParagraphs] = useState(50);
 
       useEffect(() => {
         (async () => {
@@ -86,7 +90,7 @@
             if (t) setTheme(t);
           } catch (e) {}
           try {
-            const s = localStorage.getItem("study-sessions-v6");
+            const s = localStorage.getItem("study-sessions-v7");
             if (s) setSessions(JSON.parse(s));
           } catch (e) {}
           try {
@@ -109,7 +113,7 @@
 
       const saveSessions = useCallback((next) => {
         setSessions(next);
-        try { localStorage.setItem("study-sessions-v6", JSON.stringify(next)); } catch (e) {}
+        try { localStorage.setItem("study-sessions-v7", JSON.stringify(next)); } catch (e) {}
       }, []);
 
       const updateTargetMins = (val) => {
@@ -124,43 +128,59 @@
         try { localStorage.setItem("study-target-p-v2", String(v)); } catch (e) {}
       };
 
-      // Ders Kronometre Interval
+      // 1. Ders Kronometre Gerçek Zamanlı Döngü
       useEffect(() => {
         if (isRunning) {
-          tickRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
-        } else if (tickRef.current) {
-          clearInterval(tickRef.current);
+          startTimeRef.current = Date.now();
+          tickRef.current = setInterval(() => {
+            const now = Date.now();
+            const diffSecs = Math.floor((now - startTimeRef.current) / 1000);
+            setElapsed(accumulatedTimeRef.current + diffSecs);
+          }, 200);
+        } else {
+          if (tickRef.current) clearInterval(tickRef.current);
+          accumulatedTimeRef.current = elapsed;
         }
-        return () => clearInterval(tickRef.current);
+        return () => { if (tickRef.current) clearInterval(tickRef.current); };
       }, [isRunning]);
 
-      // Pomodoro Interval
+      // 2. Pomodoro Gerçek Zamanlı Döngü
       useEffect(() => {
         if (isPomoRunning) {
+          pomoEndTimeRef.current = Date.now() + (pomoRemainingAtPauseRef.current * 1000);
           pomoTickRef.current = setInterval(() => {
-            setPomoSecondsLeft((s) => {
-              if (s <= 1) {
-                setIsPomoRunning(false);
-                alert("Pomodoro süresi bitti! Harika iş çıkardın.");
-                return 0;
-              }
-              return s - 1;
-            });
-          }, 1000);
-        } else if (pomoTickRef.current) {
-          clearInterval(pomoTickRef.current);
+            const now = Date.now();
+            const leftSecs = Math.ceil((pomoEndTimeRef.current - now) / 1000);
+            if (leftSecs <= 0) {
+              setIsPomoRunning(false);
+              setPomoSecondsLeft(0);
+              pomoRemainingAtPauseRef.current = 0;
+              alert("Pomodoro süresi bitti! Harika iş çıkardın.");
+            } else {
+              setPomoSecondsLeft(leftSecs);
+            }
+          }, 200);
+        } else {
+          if (pomoTickRef.current) clearInterval(pomoTickRef.current);
+          pomoRemainingAtPauseRef.current = pomoSecondsLeft;
         }
-        return () => clearInterval(pomoTickRef.current);
+        return () => { if (pomoTickRef.current) clearInterval(pomoTickRef.current); };
       }, [isPomoRunning]);
 
-      // Paragraf Kronometre Interval
+      // 3. Paragraf Kronometre Gerçek Zamanlı Döngü
       useEffect(() => {
         if (pIsRunning) {
-          pTickRef.current = setInterval(() => setPElapsed((e) => e + 1), 1000);
-        } else if (pTickRef.current) {
-          clearInterval(pTickRef.current);
+          pStartTimeRef.current = Date.now();
+          pTickRef.current = setInterval(() => {
+            const now = Date.now();
+            const diffSecs = Math.floor((now - pStartTimeRef.current) / 1000);
+            setPElapsed(pAccumulatedTimeRef.current + diffSecs);
+          }, 200);
+        } else {
+          if (pTickRef.current) clearInterval(pTickRef.current);
+          pAccumulatedTimeRef.current = pElapsed;
         }
-        return () => clearInterval(pTickRef.current);
+        return () => { if (pTickRef.current) clearInterval(pTickRef.current); };
       }, [pIsRunning]);
 
       const handleStartPause = () => {
@@ -172,6 +192,7 @@
         if (elapsed < 3) {
           setIsRunning(false);
           setElapsed(0);
+          accumulatedTimeRef.current = 0;
           return;
         }
         const minutes = Math.max(1, Math.round(elapsed / 60));
@@ -186,17 +207,20 @@
         saveSessions([session, ...sessions]);
         setIsRunning(false);
         setElapsed(0);
+        accumulatedTimeRef.current = 0;
       };
 
       const handleReset = () => {
         setIsRunning(false);
         setElapsed(0);
+        accumulatedTimeRef.current = 0;
       };
 
       const selectPomoTime = (mins) => {
         setIsPomoRunning(false);
         setPomoMinutes(mins);
         setPomoSecondsLeft(mins * 60);
+        pomoRemainingAtPauseRef.current = mins * 60;
       };
 
       const handlePomoFinish = () => {
@@ -204,6 +228,7 @@
         if (elapsedSecs < 10) {
           setIsPomoRunning(false);
           setPomoSecondsLeft(pomoMinutes * 60);
+          pomoRemainingAtPauseRef.current = pomoMinutes * 60;
           return;
         }
         const minutes = Math.max(1, Math.round(elapsedSecs / 60));
@@ -218,6 +243,7 @@
         saveSessions([session, ...sessions]);
         setIsPomoRunning(false);
         setPomoSecondsLeft(pomoMinutes * 60);
+        pomoRemainingAtPauseRef.current = pomoMinutes * 60;
       };
 
       const handlePStartPause = () => {
@@ -228,6 +254,7 @@
         if (pElapsed < 3 && pCount === 0) {
           setPIsRunning(false);
           setPElapsed(0);
+          pAccumulatedTimeRef.current = 0;
           setPCount(0);
           return;
         }
@@ -244,12 +271,14 @@
         saveSessions([log, ...sessions]);
         setPIsRunning(false);
         setPElapsed(0);
+        pAccumulatedTimeRef.current = 0;
         setPCount(0);
       };
 
       const handlePReset = () => {
         setPIsRunning(false);
         setPElapsed(0);
+        pAccumulatedTimeRef.current = 0;
         setPCount(0);
       };
 
@@ -340,7 +369,6 @@
               <span style={{ fontSize: "13px", fontWeight: 600, color: textMuted }}>🎯 Günlük Hedefler ve İlerleme</span>
             </div>
 
-            {/* Ders Hedefi Ayarı */}
             <div style={{ marginBottom: "14px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
                 <span>Çalışma: <strong>{todayMinutes} dk</strong> / <input type="number" value={targetStudyMins} onChange={(e) => updateTargetMins(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "4px", padding: "2px 4px", fontSize: "12px", textAlign: "center" }} /> dk</span>
@@ -351,7 +379,6 @@
               </div>
             </div>
 
-            {/* Paragraf Hedefi Ayarı */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
                 <span>Paragraf: <strong>{todayParagraphCount} soru</strong> / <input type="number" value={targetParagraphs} onChange={(e) => updateTargetParagraphs(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "4px", padding: "2px 4px", fontSize: "12px", textAlign: "center" }} /> soru</span>
@@ -364,7 +391,7 @@
           </div>
 
 
-          {/* MOD SEÇİMİ (KRONOMETRE / POMODORO) */}
+          {/* MOD SEÇİMİ */}
           <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginBottom: "16px" }}>
             <button onClick={() => setMode("kronometre")} style={{ background: mode === "kronometre" ? "#38BDF8" : bgCard, color: mode === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 16px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
               ⏱️ Kronometre
@@ -428,7 +455,7 @@
                 <button onClick={handlePomoFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
                   Bitir ve Kaydet
                 </button>
-                <button onClick={() => { setIsPomoRunning(false); setPomoSecondsLeft(pomoMinutes * 60); }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
+                <button onClick={() => { setIsPomoRunning(false); setPomoSecondsLeft(pomoMinutes * 60); pomoRemainingAtPauseRef.current = pomoMinutes * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
                   Sıfırla
                 </button>
               </div>
