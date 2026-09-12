@@ -53,7 +53,6 @@
       const [theme, setTheme] = useState("dark");
       const [sessions, setSessions] = useState([]);
       
-      // Navigasyon Sekmesi: "sayac" veya "istatistik"
       const [activeTab, setActiveTab] = useState("sayac");
       const [mode, setMode] = useState("kronometre");
       
@@ -336,47 +335,15 @@
           color: colorMain, 
           minHeight: "100vh",
           width: "100%",
-          padding: "20px 16px 40px", 
+          padding: "20px 16px 90px", 
           maxWidth: "720px", 
           margin: "0 auto", 
-          boxSizing: "border-box" 
+          boxSizing: "border-box",
+          position: "relative"
         }}>
           
-          {/* ÜST MENÜ VE TEMA BUTONU */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button 
-                onClick={() => setActiveTab("sayac")} 
-                style={{ 
-                  background: activeTab === "sayac" ? "#38BDF8" : bgCard, 
-                  color: activeTab === "sayac" ? "#0B0F19" : colorMain, 
-                  border: `1px solid ${borderCard}`, 
-                  borderRadius: "8px", 
-                  padding: "8px 14px", 
-                  fontWeight: 600, 
-                  cursor: "pointer", 
-                  fontSize: "13px" 
-                }}
-              >
-                ⏱️ Sayaç
-              </button>
-              <button 
-                onClick={() => setActiveTab("istatistik")} 
-                style={{ 
-                  background: activeTab === "istatistik" ? "#38BDF8" : bgCard, 
-                  color: activeTab === "istatistik" ? "#0B0F19" : colorMain, 
-                  border: `1px solid ${borderCard}`, 
-                  borderRadius: "8px", 
-                  padding: "8px 14px", 
-                  fontWeight: 600, 
-                  cursor: "pointer", 
-                  fontSize: "13px" 
-                }}
-              >
-                📊 İstatistikler
-              </button>
-            </div>
-
+          {/* SAĞ ÜST TEMA BUTONU */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
             <button 
               onClick={toggleTheme} 
               style={{ 
@@ -539,7 +506,7 @@
                 <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 16px", fontWeight: 600 }}>📊 Haftalık Performans Grafiği</p>
                 
                 {/* Çubuk Grafik */}
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "120px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}`, marginBottom: "12px" }}>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "120px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}`, marginBottom: "16px" }}>
                   {weekData.map((d, i) => {
                     const heightPct = Math.max(8, Math.round((d.dakika / maxWeekMin) * 100));
                     return (
@@ -551,7 +518,7 @@
                   })}
                 </div>
 
-                {/* Günlük Dakika Tablosu Kutucukları */}
+                {/* Günlük Dakika Kutucukları Tablosu */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", textAlign: "center" }}>
                   {weekData.map((d, i) => (
                     <div key={i} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 2px" }}>
@@ -597,7 +564,7 @@
           </div>
 
           {/* GEÇMİŞ OTURUMLAR (HER İKİ SEKMEDE DE GÖRÜNÜR) */}
-          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px" }}>
+          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "30px" }}>
             <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Geçmiş oturumlar</p>
             {sessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kayıt yok.</p>}
             <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "240px", overflowY: "auto" }}>
@@ -614,6 +581,58 @@
               ))}
             </div>
           </div>
+
+
+          {/* UYGULAMANIN EN ALTINDAKİ SABİT SEKME ÇUBUĞU */}
+          <div style={{ 
+            position: "fixed", 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            background: bgCard, 
+            borderTop: `1px solid ${borderCard}`, 
+            display: "flex", 
+            justifyContent: "space-around", 
+            padding: "10px 16px", 
+            zIndex: 1000,
+            boxShadow: "0 -4px 10px rgba(0,0,0,0.15)"
+          }}>
+            <button 
+              onClick={() => setActiveTab("sayac")} 
+              style={{ 
+                background: activeTab === "sayac" ? "#38BDF8" : "transparent", 
+                color: activeTab === "sayac" ? "#0B0F19" : colorMain, 
+                border: "none", 
+                borderRadius: "8px", 
+                padding: "8px 24px", 
+                fontWeight: 600, 
+                cursor: "pointer", 
+                fontSize: "14px",
+                flex: 1,
+                maxWidth: "200px"
+              }}
+            >
+              ⏱️ Sayaç
+            </button>
+            <button 
+              onClick={() => setActiveTab("istatistik")} 
+              style={{ 
+                background: activeTab === "istatistik" ? "#38BDF8" : "transparent", 
+                color: activeTab === "istatistik" ? "#0B0F19" : colorMain, 
+                border: "none", 
+                borderRadius: "8px", 
+                padding: "8px 24px", 
+                fontWeight: 600, 
+                cursor: "pointer", 
+                fontSize: "14px",
+                flex: 1,
+                maxWidth: "200px"
+              }}
+            >
+              📊 İstatistikler
+            </button>
+          </div>
+
         </div>
       );
     }
