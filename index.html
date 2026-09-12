@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Play, Pause, RotateCcw, Check, Bell, Plus, Trash2, BookOpen, X, Lightbulb, Loader2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Check, Bell, Plus, Trash2, BookOpen, X, Lightbulb, Loader2, Moon, Sun } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
@@ -39,6 +39,7 @@ function mondayIndex(date) {
 
 export default function StudyTracker() {
   const [loaded, setLoaded] = useState(false);
+  const [theme, setTheme] = useState("dark");
   const [sessions, setSessions] = useState([]);
   const [reminders, setReminders] = useState([]);
   const [breaks, setBreaks] = useState([]);
@@ -68,6 +69,10 @@ export default function StudyTracker() {
   useEffect(() => {
     (async () => {
       try {
+        const t = await window.storage.get("study-theme", false);
+        if (t && t.value) setTheme(t.value);
+      } catch (e) {}
+      try {
         const s = await window.storage.get("study-sessions", false);
         if (s && s.value) setSessions(JSON.parse(s.value));
       } catch (e) {}
@@ -86,6 +91,14 @@ export default function StudyTracker() {
       setLoaded(true);
     })();
   }, []);
+
+  const toggleTheme = async () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    try {
+      await window.storage.set("study-theme", nextTheme, false);
+    } catch (e) {}
+  };
 
   const saveSessions = useCallback(async (next) => {
     setSessions(next);
@@ -335,19 +348,28 @@ export default function StudyTracker() {
   const ringPct = Math.min(1, (elapsed % 1500) / 1500);
   const circumference = 2 * Math.PI * 88;
 
+  // Tema renk paletleri
+  const isDark = theme === "dark";
+  const bgMain = isDark ? "#0B0F19" : "#F8FAFC";
+  const colorMain = isDark ? "#E2E8F0" : "#1E293B";
+  const bgCard = isDark ? "#131B2E" : "#FFFFFF";
+  const borderCard = isDark ? "#1E293B" : "#E2E8F0";
+  const textMuted = isDark ? "#94A3B8" : "#64748B";
+  const bgInner = isDark ? "#0B0F19" : "#F1F5F9";
+
   if (!loaded) return null;
 
   return (
     <div
       style={{
         fontFamily: "'Inter', sans-serif",
-        background: "#0B0F19",
-        color: "#E2E8F0",
+        background: bgMain,
+        color: colorMain,
         borderRadius: "16px",
         padding: "28px 24px 32px",
         maxWidth: "720px",
         margin: "0 auto",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+        boxShadow: isDark ? "0 10px 30px rgba(0,0,0,0.5)" : "0 10px 30px rgba(0,0,0,0.08)",
         overflow: "hidden",
         boxSizing: "border-box",
         touchAction: "manipulation",
@@ -358,18 +380,41 @@ export default function StudyTracker() {
         .st-num { font-family: 'Fraunces', serif; }
         .st-btn { transition: transform 0.1s ease, background 0.15s ease; cursor: pointer; border: none; }
         .st-btn:active { transform: scale(0.96); }
-        .st-input { background: #131B2E; border: 1px solid #1E293B; color: #E2E8F0; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
-        .st-input::placeholder { color: #64748B; }
+        .st-input { background: ${isDark ? "#131B2E" : "#F1F5F9"}; border: 1px solid ${borderCard}; color: ${colorMain}; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+        .st-input::placeholder { color: ${textMuted}; }
         .st-input:focus { outline: none; border-color: #38BDF8; }
-        select.st-input option { background: #131B2E; }
+        select.st-input option { background: ${bgCard}; color: ${colorMain}; }
         .st-spin { animation: st-spin 0.8s linear infinite; }
         @keyframes st-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
+      {/* Üst Kısım: Tema Değiştirme Butonu */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+        <button
+          className="st-btn"
+          onClick={toggleTheme}
+          style={{
+            background: bgCard,
+            color: colorMain,
+            border: `1px solid ${borderCard}`,
+            borderRadius: "50%",
+            width: "38px",
+            height: "38px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+          }}
+          title="Temayı Değiştir"
+        >
+          {isDark ? <Sun size={18} color="#F59E0B" /> : <Moon size={18} color="#3B82F6" />}
+        </button>
+      </div>
+
       {dueReminder && (
         <div
           style={{
-            background: "#1E1B18",
+            background: isDark ? "#1E1B18" : "#FEF3C7",
             border: "1px solid #F59E0B",
             borderRadius: "10px",
             padding: "12px 16px",
@@ -388,7 +433,7 @@ export default function StudyTracker() {
           <button
             className="st-btn"
             onClick={() => setDueReminder(null)}
-            style={{ background: "transparent", color: "#94A3B8" }}
+            style={{ background: "transparent", color: textMuted }}
           >
             <X size={16} />
           </button>
@@ -398,7 +443,7 @@ export default function StudyTracker() {
       {breakStatus === "suggested" && (
         <div
           style={{
-            background: "#06221E",
+            background: isDark ? "#06221E" : "#CCFBF1",
             border: "1px solid #2DD4BF",
             borderRadius: "10px",
             padding: "12px 16px",
@@ -422,7 +467,7 @@ export default function StudyTracker() {
             <button
               className="st-btn"
               onClick={dismissBreakSuggestion}
-              style={{ background: "transparent", color: "#94A3B8", border: "1px solid #1E293B", borderRadius: "8px", padding: "6px 12px", fontSize: "13px" }}
+              style={{ background: "transparent", color: textMuted, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontSize: "13px" }}
             >
               Devam et
             </button>
@@ -440,7 +485,7 @@ export default function StudyTracker() {
 
           <div style={{ display: "flex", justifyContent: "center", position: "relative", margin: "12px 0 20px" }}>
             <svg width="200" height="200" viewBox="0 0 200 200">
-              <circle cx="100" cy="100" r="88" fill="none" stroke="#131B2E" strokeWidth="10" />
+              <circle cx="100" cy="100" r="88" fill="none" stroke={borderCard} strokeWidth="10" />
               <circle
                 cx="100"
                 cy="100"
@@ -471,7 +516,7 @@ export default function StudyTracker() {
               <span className="st-num" style={{ fontSize: "34px", fontWeight: 600 }}>
                 {formatClock(breakSecondsLeft)}
               </span>
-              <span style={{ fontSize: "12px", color: "#94A3B8", marginTop: "4px" }}>kaldı</span>
+              <span style={{ fontSize: "12px", color: textMuted, marginTop: "4px" }}>kaldı</span>
             </div>
           </div>
 
@@ -496,14 +541,14 @@ export default function StudyTracker() {
       ) : (
         <>
           <div style={{ textAlign: "center", marginBottom: "8px" }}>
-            <p style={{ fontSize: "13px", color: "#94A3B8", margin: "0 0 4px", letterSpacing: "0.03em" }}>
+            <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", letterSpacing: "0.03em" }}>
               DERS ÇALIŞMA SAYACI
             </p>
           </div>
 
           <div style={{ display: "flex", justifyContent: "center", position: "relative", margin: "12px 0 20px" }}>
             <svg width="200" height="200" viewBox="0 0 200 200">
-              <circle cx="100" cy="100" r="88" fill="none" stroke="#131B2E" strokeWidth="10" />
+              <circle cx="100" cy="100" r="88" fill="none" stroke={borderCard} strokeWidth="10" />
               <circle
                 cx="100"
                 cy="100"
@@ -534,7 +579,7 @@ export default function StudyTracker() {
               <span className="st-num" style={{ fontSize: "34px", fontWeight: 600 }}>
                 {formatClock(elapsed)}
               </span>
-              <span style={{ fontSize: "12px", color: "#94A3B8", marginTop: "4px" }}>
+              <span style={{ fontSize: "12px", color: textMuted, marginTop: "4px" }}>
                 {isRunning ? "çalışıyor" : elapsed > 0 ? "duraklatıldı" : "hazır"}
               </span>
             </div>
@@ -596,8 +641,9 @@ export default function StudyTracker() {
               onClick={handleReset}
               disabled={elapsed === 0}
               style={{
-                background: "#131B2E",
-                color: "#E2E8F0",
+                background: bgCard,
+                color: colorMain,
+                border: `1px solid ${borderCard}`,
                 borderRadius: "10px",
                 padding: "10px 14px",
                 opacity: elapsed === 0 ? 0.4 : 1,
@@ -610,48 +656,48 @@ export default function StudyTracker() {
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
-        <div style={{ background: "#131B2E", borderRadius: "12px", padding: "14px 16px" }}>
-          <p style={{ fontSize: "12px", color: "#94A3B8", margin: "0 0 4px" }}>Bugün çalışma</p>
+        <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px 16px" }}>
+          <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün çalışma</p>
           <p className="st-num" style={{ fontSize: "22px", fontWeight: 600, margin: 0 }}>
             {formatMinutes(todayMinutes)}
           </p>
         </div>
-        <div style={{ background: "#131B2E", borderRadius: "12px", padding: "14px 16px" }}>
-          <p style={{ fontSize: "12px", color: "#94A3B8", margin: "0 0 4px" }}>Bugün mola</p>
+        <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px 16px" }}>
+          <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün mola</p>
           <p className="st-num" style={{ fontSize: "22px", fontWeight: 600, margin: 0 }}>
             {formatMinutes(todayBreakMinutes)}
           </p>
         </div>
-        <div style={{ background: "#131B2E", borderRadius: "12px", padding: "14px 16px" }}>
-          <p style={{ fontSize: "12px", color: "#94A3B8", margin: "0 0 4px" }}>Bu hafta çalışma</p>
+        <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px 16px" }}>
+          <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bu hafta çalışma</p>
           <p className="st-num" style={{ fontSize: "22px", fontWeight: 600, margin: 0 }}>
             {formatMinutes(weekMinutes)}
           </p>
         </div>
-        <div style={{ background: "#131B2E", borderRadius: "12px", padding: "14px 16px" }}>
-          <p style={{ fontSize: "12px", color: "#94A3B8", margin: "0 0 4px" }}>Bu hafta mola</p>
+        <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px 16px" }}>
+          <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bu hafta mola</p>
           <p className="st-num" style={{ fontSize: "22px", fontWeight: 600, margin: 0 }}>
             {formatMinutes(weekBreakMinutes)}
           </p>
         </div>
       </div>
 
-      <div style={{ background: "#131B2E", borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
-        <p style={{ fontSize: "13px", color: "#94A3B8", margin: "0 0 12px" }}>Haftalık çalışma (dakika)</p>
+      <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
+        <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Haftalık çalışma (dakika)</p>
         <div style={{ height: "140px" }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weekData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-              <XAxis dataKey="label" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={borderCard} vertical={false} />
+              <XAxis dataKey="label" stroke={textMuted} fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke={textMuted} fontSize={12} tickLine={false} axisLine={false} />
               <Bar dataKey="dakika" fill="#38BDF8" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div style={{ background: "#131B2E", borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
-        <p style={{ fontSize: "13px", color: "#94A3B8", margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px" }}>
+      <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
+        <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px" }}>
           <Lightbulb size={14} /> Konu ipucu
         </p>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
@@ -694,7 +740,8 @@ export default function StudyTracker() {
         {hintText && (
           <div
             style={{
-              background: "#0B0F19",
+              background: bgInner,
+              border: `1px solid ${borderCard}`,
               borderRadius: "8px",
               padding: "12px 14px",
               fontSize: "13px",
@@ -720,9 +767,9 @@ export default function StudyTracker() {
             onClick={addOwnNote}
             disabled={!ownNoteText.trim()}
             style={{
-              background: "#1E293B",
-              color: "#E2E8F0",
-              border: "1px solid #334155",
+              background: bgInner,
+              color: colorMain,
+              border: `1px solid ${borderCard}`,
               borderRadius: "8px",
               padding: "8px 14px",
               display: "flex",
@@ -737,18 +784,18 @@ export default function StudyTracker() {
         </div>
 
         {savedHints.length > 0 && (
-          <div style={{ borderTop: "1px solid #1E293B", paddingTop: "12px" }}>
-            <p style={{ fontSize: "12px", color: "#64748B", margin: "0 0 8px" }}>Kaydedilen ipuçları ve notlar</p>
+          <div style={{ borderTop: `1px solid ${borderCard}`, paddingTop: "12px" }}>
+            <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 8px" }}>Kaydedilen ipuçları ve notlar</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "260px", overflowY: "auto" }}>
               {savedHints.map((h) => (
-                <div key={h.id} style={{ background: "#0B0F19", borderRadius: "8px", padding: "10px 12px" }}>
+                <div key={h.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 12px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
                     <span style={{ fontSize: "12px", color: h.type === "not" ? "#2DD4BF" : "#38BDF8", fontWeight: 600 }}>
                       {h.type === "not" ? "Kendi notum" : "İpucu"}
                       {h.subject ? ` — ${h.subject}${h.topic ? `: ${h.topic}` : ""}` : ""}
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "11px", color: "#64748B" }}>{h.date}</span>
+                      <span style={{ fontSize: "11px", color: textMuted }}>{h.date}</span>
                       <button className="st-btn" onClick={() => deleteHint(h.id)} style={{ background: "transparent", color: "#F43F5E" }}>
                         <Trash2 size={13} />
                       </button>
@@ -762,13 +809,13 @@ export default function StudyTracker() {
         )}
       </div>
 
-      <div style={{ background: "#131B2E", borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
-        <p style={{ fontSize: "13px", color: "#94A3B8", margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px" }}>
+      <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
+        <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px" }}>
           <Bell size={14} /> Hatırlatıcılar
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
           {reminders.length === 0 && (
-            <p style={{ fontSize: "13px", color: "#64748B", margin: 0 }}>Henüz hatırlatıcı eklenmedi.</p>
+            <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz hatırlatıcı eklenmedi.</p>
           )}
           {reminders.map((r) => (
             <div
@@ -777,7 +824,8 @@ export default function StudyTracker() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                background: "#0B0F19",
+                background: bgInner,
+                border: `1px solid ${borderCard}`,
                 borderRadius: "8px",
                 padding: "8px 12px",
                 fontSize: "13px",
@@ -821,16 +869,16 @@ export default function StudyTracker() {
             <Plus size={14} /> Ekle
           </button>
         </div>
-        <p style={{ fontSize: "11px", color: "#64748B", marginTop: "10px" }}>
+        <p style={{ fontSize: "11px", color: textMuted, marginTop: "10px" }}>
           Not: hatırlatma bu sayfa tarayıcıda açıkken çalışır.
         </p>
       </div>
 
-      <div style={{ background: "#131B2E", borderRadius: "12px", padding: "16px" }}>
-        <p style={{ fontSize: "13px", color: "#94A3B8", margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px" }}>
+      <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px" }}>
+        <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px" }}>
           <BookOpen size={14} /> Geçmiş oturumlar
         </p>
-        {sessions.length === 0 && <p style={{ fontSize: "13px", color: "#64748B", margin: 0 }}>Henüz kayıt yok.</p>}
+        {sessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kayıt yok.</p>}
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "220px", overflowY: "auto" }}>
           {sessions.slice(0, 30).map((s) => (
             <div
@@ -841,7 +889,8 @@ export default function StudyTracker() {
                 justifyContent: "space-between",
                 fontSize: "13px",
                 padding: "8px 12px",
-                background: "#0B0F19",
+                background: bgInner,
+                border: `1px solid ${borderCard}`,
                 borderRadius: "8px",
               }}
             >
@@ -850,7 +899,7 @@ export default function StudyTracker() {
                 <span>{s.subject}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ color: "#94A3B8" }}>{s.date}</span>
+                <span style={{ color: textMuted }}>{s.date}</span>
                 <span>{formatMinutes(s.minutes)}</span>
                 <button className="st-btn" onClick={() => deleteSession(s.id)} style={{ background: "transparent", color: "#F43F5E" }}>
                   <Trash2 size={13} />
@@ -861,7 +910,7 @@ export default function StudyTracker() {
         </div>
       </div>
 
-      <p style={{ fontSize: "11px", color: "#64748B", textAlign: "center", marginTop: "18px" }}>
+      <p style={{ fontSize: "11px", color: textMuted, textAlign: "center", marginTop: "18px" }}>
         Tüm veriler yalnızca senin tarayıcında saklanır.
       </p>
     </div>
