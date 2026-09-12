@@ -31,13 +31,6 @@
     const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-    const SUBJECT_COLORS = ["#D97706", "#0D9488", "#6366F1", "#EC4899", "#8B5CF6", "#14B8A6"];
-
-    function colorForSubject(name) {
-      let hash = 0;
-      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-      return SUBJECT_COLORS[Math.abs(hash) % SUBJECT_COLORS.length];
-    }
 
     function pad(n) { return String(n).padStart(2, "0"); }
     function formatClock(totalSeconds) {
@@ -59,8 +52,6 @@
       const [loaded, setLoaded] = useState(false);
       const [theme, setTheme] = useState("dark");
       const [sessions, setSessions] = useState([]);
-      const [breaks, setBreaks] = useState([]);
-      const [paragraphLogs, setParagraphLogs] = useState([]);
       
       // Ders Sayaç State'leri
       const [subject, setSubject] = useState("");
@@ -81,16 +72,8 @@
             if (t) setTheme(t);
           } catch (e) {}
           try {
-            const s = localStorage.getItem("study-sessions");
+            const s = localStorage.getItem("study-sessions-v4");
             if (s) setSessions(JSON.parse(s));
-          } catch (e) {}
-          try {
-            const b = localStorage.getItem("study-breaks");
-            if (b) setBreaks(JSON.parse(b));
-          } catch (e) {}
-          try {
-            const p = localStorage.getItem("study-paragraphs-v3");
-            if (p) setParagraphLogs(JSON.parse(p));
           } catch (e) {}
           setLoaded(true);
         })();
@@ -104,12 +87,7 @@
 
       const saveSessions = useCallback((next) => {
         setSessions(next);
-        try { localStorage.setItem("study-sessions", JSON.stringify(next)); } catch (e) {}
-      }, []);
-
-      const saveParagraphLogs = useCallback((next) => {
-        setParagraphLogs(next);
-        try { localStorage.setItem("study-paragraphs-v3", JSON.stringify(next)); } catch (e) {}
+        try { localStorage.setItem("study-sessions-v4", JSON.stringify(next)); } catch (e) {}
       }, []);
 
       // Ders Sayacı Interval
@@ -138,13 +116,20 @@
       };
 
       const handleFinish = () => {
-        if (elapsed < 5) {
+        if (elapsed < 3) {
           setIsRunning(false);
           setElapsed(0);
           return;
         }
-        const minutes = Math.round(elapsed / 60);
-        const session = { id: Date.now(), subject: subject.trim() || "Genel", minutes, date: isoDay(new Date()) };
+        const minutes = Math.max(1, Math.round(elapsed / 60));
+        const session = { 
+          id: Date.now(), 
+          type: "ders", 
+          subject: subject.trim() || "Genel", 
+          minutes, 
+          seconds: elapsed,
+          date: isoDay(new Date()) 
+        };
         saveSessions([session, ...sessions]);
         setIsRunning(false);
         setElapsed(0);
@@ -160,15 +145,23 @@
       };
 
       const handlePFinish = () => {
-        if (pElapsed < 5 && pCount === 0) {
+        if (pElapsed < 3 && pCount === 0) {
           setPIsRunning(false);
           setPElapsed(0);
           setPCount(0);
           return;
         }
         const minutes = Math.max(1, Math.round(pElapsed / 60));
-        const log = { id: Date.now(), minutes, count: pCount, seconds: pElapsed, date: isoDay(new Date()) };
-        saveParagraphLogs([log, ...paragraphLogs]);
+        const log = { 
+          id: Date.now(), 
+          type: "paragraf", 
+          subject: "Paragraf / Soru", 
+          minutes, 
+          count: pCount, 
+          seconds: pElapsed, 
+          date: isoDay(new Date()) 
+        };
+        saveSessions([log, ...sessions]);
         setPIsRunning(false);
         setPElapsed(0);
         setPCount(0);
@@ -181,14 +174,13 @@
       };
 
       const deleteSession = (id) => saveSessions(sessions.filter((s) => s.id !== id));
-      const deleteParagraphLog = (id) => saveParagraphLogs(paragraphLogs.filter((p) => p.id !== id));
 
       const today = isoDay(new Date());
-      const todayMinutes = useMemo(() => sessions.filter((s) => s.date === today).reduce((a, s) => a + s.minutes, 0), [sessions, today]);
-      const todayBreakMinutes = useMemo(() => breaks.filter((b) => b.date === today).reduce((a, b) => a + b.minutes, 0), [breaks, today]);
+      const todaySessions = sessions.filter((s) => s.date === today);
       
-      const todayParagraphMinutes = useMemo(() => paragraphLogs.filter((p) => p.date === today).reduce((a, p) => a + p.minutes, 0), [paragraphLogs, today]);
-      const todayParagraphCount = useMemo(() => paragraphLogs.filter((p) => p.date === today).reduce((a, p) => a + p.count, 0), [paragraphLogs, today]);
+      const todayMinutes = todaySessions.filter(s => s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
+      const todayParagraphMinutes = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + s.minutes, 0);
+      const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
 
       const weekData = useMemo(() => {
         const now = new Date();
@@ -199,7 +191,7 @@
           const d = new Date(monday);
           d.setDate(monday.getDate() + i);
           const dISO = isoDay(d);
-          const mins = sessions.filter((s) => s.date === dISO).reduce((a, s) => a + s.minutes, 0);
+          const mins = sessions.filter((s) => s.date === dISO && s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
           days.push({ label: DAYS[i], dakika: mins });
         }
         return days;
@@ -348,18 +340,17 @@
           {/* Geçmiş Oturumlar */}
           <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px" }}>
             <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Geçmiş oturumlar</p>
-            {sessions.length === 0 && paragraphLogs.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kayıt yok.</p>}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "220px", overflowY: "auto" }}>
-              {paragraphLogs.map((p) => (
-                <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "8px 12px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px" }}>
-                  <span>📖 Paragraf — {p.date} — {p.count} soru ({formatClock(p.seconds)})</span>
-                  <button onClick={() => deleteParagraphLog(p.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer" }}>Sil</button>
-                </div>
-              ))}
-              {sessions.map((s) => (
-                <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "8px 12px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px" }}>
-                  <span>{s.subject} — {s.date} — {formatMinutes(s.minutes)}</span>
-                  <button onClick={() => deleteSession(s.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer" }}>Sil</button>
+            {sessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kayıt yok.</p>}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "240px", overflowY: "auto" }}>
+              {sessions.map((item) => (
+                <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "8px 12px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px" }}>
+                  <span>
+                    {item.type === "paragraf" 
+                      ? `📖 Paragraf — ${item.date} — ${item.count} soru (${formatClock(item.seconds)})`
+                      : `${item.subject} — ${item.date} — ${formatMinutes(item.minutes)}`
+                    }
+                  </span>
+                  <button onClick={() => deleteSession(item.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold" }}>Sil</button>
                 </div>
               ))}
             </div>
