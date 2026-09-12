@@ -498,15 +498,13 @@
           )}
 
 
-          {/* 2. İSTATİSTİKLER SEKMESİ */}
+          {/* 2. İSTATİSTİKLER SEKMESİ (GRAFİKLER AYRI AYRI) */}
           {activeTab === "istatistik" && (
             <div>
-              {/* HAFTALIK ÇALIŞMA TABLOSU VE GRAFİĞİ */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 16px", fontWeight: 600 }}>📊 Haftalık Performans Grafiği</p>
-                
-                {/* Çubuk Grafik */}
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "120px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}`, marginBottom: "16px" }}>
+              {/* 1. GRAFİK: Haftalık Çubuk Grafik */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 16px", fontWeight: 600 }}>📊 Haftalık Performans Çubuk Grafiği</p>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "130px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}` }}>
                   {weekData.map((d, i) => {
                     const heightPct = Math.max(8, Math.round((d.dakika / maxWeekMin) * 100));
                     return (
@@ -517,8 +515,11 @@
                     );
                   })}
                 </div>
+              </div>
 
-                {/* Günlük Dakika Kutucukları Tablosu */}
+              {/* 2. GRAFİK / TABLO: Günlük Dakika Kutucukları */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 600 }}>📅 Günlük Dakika Tablosu</p>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", textAlign: "center" }}>
                   {weekData.map((d, i) => (
                     <div key={i} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 2px" }}>
