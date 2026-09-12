@@ -55,7 +55,7 @@
       
       const [mode, setMode] = useState("kronometre");
       
-      // Ders Kronometre State'leri (Gerçek zaman bazlı)
+      // Ders Kronometre State'leri
       const [subject, setSubject] = useState("");
       const [isRunning, setIsRunning] = useState(false);
       const [elapsed, setElapsed] = useState(0);
@@ -63,7 +63,7 @@
       const accumulatedTimeRef = useRef(0);
       const tickRef = useRef(null);
 
-      // Pomodoro State'leri (Gerçek zaman bazlı)
+      // Pomodoro State'leri
       const [pomoMinutes, setPomoMinutes] = useState(25);
       const [pomoSecondsLeft, setPomoSecondsLeft] = useState(25 * 60);
       const [isPomoRunning, setIsPomoRunning] = useState(false);
@@ -72,7 +72,7 @@
       const pomoRemainingAtPauseRef = useRef(25 * 60);
       const pomoTickRef = useRef(null);
 
-      // Paragraf Kronometre State'leri (Gerçek zaman bazlı)
+      // Paragraf Kronometre State'leri
       const [pIsRunning, setPIsRunning] = useState(false);
       const [pElapsed, setPElapsed] = useState(0);
       const [pCount, setPCount] = useState(0);
@@ -128,7 +128,7 @@
         try { localStorage.setItem("study-target-p-v2", String(v)); } catch (e) {}
       };
 
-      // 1. Ders Kronometre Gerçek Zamanlı Döngü
+      // 1. Ders Kronometre
       useEffect(() => {
         if (isRunning) {
           startTimeRef.current = Date.now();
@@ -144,7 +144,7 @@
         return () => { if (tickRef.current) clearInterval(tickRef.current); };
       }, [isRunning]);
 
-      // 2. Pomodoro Gerçek Zamanlı Döngü
+      // 2. Pomodoro
       useEffect(() => {
         if (isPomoRunning) {
           pomoEndTimeRef.current = Date.now() + (pomoRemainingAtPauseRef.current * 1000);
@@ -167,7 +167,7 @@
         return () => { if (pomoTickRef.current) clearInterval(pomoTickRef.current); };
       }, [isPomoRunning]);
 
-      // 3. Paragraf Kronometre Gerçek Zamanlı Döngü
+      // 3. Paragraf Kronometre
       useEffect(() => {
         if (pIsRunning) {
           pStartTimeRef.current = Date.now();
@@ -315,6 +315,7 @@
       }, [sessions]);
 
       const weekMinutes = weekData.reduce((a, d) => a + d.dakika, 0);
+      const maxWeekMin = Math.max(1, ...weekData.map(d => d.dakika));
 
       const isDark = theme === "dark";
       const bgMain = isDark ? "#0B0F19" : "#F8FAFC";
@@ -493,6 +494,30 @@
           </div>
 
 
+          {/* HAFTALIK PERFORMANS GRAFİĞİ */}
+          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
+            <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 16px", fontWeight: 600 }}>📊 Haftalık Performans Grafiği</p>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "130px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}` }}>
+              {weekData.map((d, i) => {
+                const heightPct = Math.max(8, Math.round((d.dakika / maxWeekMin) * 100));
+                return (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, height: "100%", justifyContent: "flex-end" }}>
+                    <span style={{ fontSize: "10px", color: textMuted, marginBottom: "4px" }}>{d.dakika}d</span>
+                    <div style={{ width: "70%", maxWidth: "28px", height: `${heightPct}%`, background: d.dakika > 0 ? "#38BDF8" : bgInner, borderRadius: "6px 6px 0 0", transition: "height 0.4s ease" }}></div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "8px" }}>
+              {weekData.map((d, i) => (
+                <div key={i} style={{ flex: 1, textAlign: "center", fontSize: "11px", color: textMuted, fontWeight: 500 }}>
+                  {d.label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+
           {/* DERSLERE GÖRE DAĞILIM ÖZETİ */}
           {subjectDistribution.length > 0 && (
             <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
@@ -522,19 +547,6 @@
             <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px", gridColumn: "span 2" }}>
               <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bu hafta toplam ders</p>
               <p style={{ fontSize: "20px", fontWeight: 600, margin: 0 }}>{formatMinutes(weekMinutes)}</p>
-            </div>
-          </div>
-
-          {/* Haftalık Çalışma Çizelgesi */}
-          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
-            <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Haftalık çalışma (dakika)</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", textAlign: "center" }}>
-              {weekData.map((d, i) => (
-                <div key={i} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 2px" }}>
-                  <p style={{ fontSize: "10px", color: textMuted, margin: "0 0 4px" }}>{d.label}</p>
-                  <p style={{ fontSize: "12px", fontWeight: 600, margin: 0 }}>{d.dakika}d</p>
-                </div>
-              ))}
             </div>
           </div>
 
