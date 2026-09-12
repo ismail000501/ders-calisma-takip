@@ -89,7 +89,7 @@
             if (b) setBreaks(JSON.parse(b));
           } catch (e) {}
           try {
-            const p = localStorage.getItem("study-paragraphs-v2");
+            const p = localStorage.getItem("study-paragraphs-v3");
             if (p) setParagraphLogs(JSON.parse(p));
           } catch (e) {}
           setLoaded(true);
@@ -109,7 +109,7 @@
 
       const saveParagraphLogs = useCallback((next) => {
         setParagraphLogs(next);
-        try { localStorage.setItem("study-paragraphs-v2", JSON.stringify(next)); } catch (e) {}
+        try { localStorage.setItem("study-paragraphs-v3", JSON.stringify(next)); } catch (e) {}
       }, []);
 
       // Ders Sayacı Interval
@@ -166,8 +166,8 @@
           setPCount(0);
           return;
         }
-        const minutes = Math.round(pElapsed / 60);
-        const log = { id: Date.now(), minutes, count: pCount, date: isoDay(new Date()) };
+        const minutes = Math.max(1, Math.round(pElapsed / 60));
+        const log = { id: Date.now(), minutes, count: pCount, seconds: pElapsed, date: isoDay(new Date()) };
         saveParagraphLogs([log, ...paragraphLogs]);
         setPIsRunning(false);
         setPElapsed(0);
@@ -283,10 +283,10 @@
           {/* PARAGRAF SAYACI BÖLÜMÜ */}
           <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px" }}>
             <div style={{ textAlign: "center", marginBottom: "4px" }}>
-              <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>PARAGRAF / SORU SAYACI</p>
+              <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>PARAGRAF / SORU KRONOMETRESİ</p>
             </div>
 
-            <div style={{ textAlign: "center", margin: "15px 0", fontSize: "36px", fontWeight: "bold", fontFamily: "serif", color: "#38BDF8" }}>
+            <div style={{ textAlign: "center", margin: "15px 0", fontSize: "38px", fontWeight: "bold", fontFamily: "serif", color: "#38BDF8" }}>
               {formatClock(pElapsed)}
             </div>
 
@@ -303,13 +303,13 @@
             </div>
 
             <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-              <button onClick={handlePStartPause} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "8px 16px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
+              <button onClick={handlePStartPause} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
                 {pIsRunning ? "Duraklat" : "Başla"}
               </button>
-              <button onClick={handlePFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "8px 16px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
+              <button onClick={handlePFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
                 Bitir ve Kaydet
               </button>
-              <button onClick={handlePReset} style={{ background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "13px" }}>
+              <button onClick={handlePReset} style={{ background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
                 Sıfırla
               </button>
             </div>
@@ -352,7 +352,7 @@
             <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "220px", overflowY: "auto" }}>
               {paragraphLogs.map((p) => (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "8px 12px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px" }}>
-                  <span>📖 Paragraf — {p.date} — {p.count} soru ({formatMinutes(p.minutes)})</span>
+                  <span>📖 Paragraf — {p.date} — {p.count} soru ({formatClock(p.seconds)})</span>
                   <button onClick={() => deleteParagraphLog(p.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer" }}>Sil</button>
                 </div>
               ))}
