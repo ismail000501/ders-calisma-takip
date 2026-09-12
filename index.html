@@ -53,6 +53,8 @@
       const [theme, setTheme] = useState("dark");
       const [sessions, setSessions] = useState([]);
       
+      // Navigasyon Sekmesi: "sayac" veya "istatistik"
+      const [activeTab, setActiveTab] = useState("sayac");
       const [mode, setMode] = useState("kronometre");
       
       // Ders Kronometre State'leri
@@ -340,8 +342,41 @@
           boxSizing: "border-box" 
         }}>
           
-          {/* Sağ Üst Tema Butonu */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+          {/* ÜST MENÜ VE TEMA BUTONU */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button 
+                onClick={() => setActiveTab("sayac")} 
+                style={{ 
+                  background: activeTab === "sayac" ? "#38BDF8" : bgCard, 
+                  color: activeTab === "sayac" ? "#0B0F19" : colorMain, 
+                  border: `1px solid ${borderCard}`, 
+                  borderRadius: "8px", 
+                  padding: "8px 14px", 
+                  fontWeight: 600, 
+                  cursor: "pointer", 
+                  fontSize: "13px" 
+                }}
+              >
+                ⏱️ Sayaç
+              </button>
+              <button 
+                onClick={() => setActiveTab("istatistik")} 
+                style={{ 
+                  background: activeTab === "istatistik" ? "#38BDF8" : bgCard, 
+                  color: activeTab === "istatistik" ? "#0B0F19" : colorMain, 
+                  border: `1px solid ${borderCard}`, 
+                  borderRadius: "8px", 
+                  padding: "8px 14px", 
+                  fontWeight: 600, 
+                  cursor: "pointer", 
+                  fontSize: "13px" 
+                }}
+              >
+                📊 İstatistikler
+              </button>
+            </div>
+
             <button 
               onClick={toggleTheme} 
               style={{ 
@@ -364,177 +399,188 @@
             </button>
           </div>
 
-          {/* GÜNLÜK HEDEF VE AYARLAR KARTI */}
-          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <span style={{ fontSize: "13px", fontWeight: 600, color: textMuted }}>🎯 Günlük Hedefler ve İlerleme</span>
-            </div>
 
-            <div style={{ marginBottom: "14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
-                <span>Çalışma: <strong>{todayMinutes} dk</strong> / <input type="number" value={targetStudyMins} onChange={(e) => updateTargetMins(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "4px", padding: "2px 4px", fontSize: "12px", textAlign: "center" }} /> dk</span>
-                <span style={{ color: textMuted }}>%{Math.round((todayMinutes / targetStudyMins) * 100)}</span>
-              </div>
-              <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
-                <div style={{ width: `${Math.min(100, (todayMinutes / targetStudyMins) * 100)}%`, background: "#38BDF8", height: "100%", transition: "width 0.3s ease" }}></div>
-              </div>
-            </div>
-
+          {/* 1. SAYAÇ SEKMESİ */}
+          {activeTab === "sayac" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
-                <span>Paragraf: <strong>{todayParagraphCount} soru</strong> / <input type="number" value={targetParagraphs} onChange={(e) => updateTargetParagraphs(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "4px", padding: "2px 4px", fontSize: "12px", textAlign: "center" }} /> soru</span>
-                <span style={{ color: textMuted }}>%{Math.round((todayParagraphCount / targetParagraphs) * 100)}</span>
-              </div>
-              <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
-                <div style={{ width: `${Math.min(100, (todayParagraphCount / targetParagraphs) * 100)}%`, background: "#2DD4BF", height: "100%", transition: "width 0.3s ease" }}></div>
-              </div>
-            </div>
-          </div>
-
-
-          {/* MOD SEÇİMİ */}
-          <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginBottom: "16px" }}>
-            <button onClick={() => setMode("kronometre")} style={{ background: mode === "kronometre" ? "#38BDF8" : bgCard, color: mode === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 16px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
-              ⏱️ Kronometre
-            </button>
-            <button onClick={() => setMode("pomodoro")} style={{ background: mode === "pomodoro" ? "#38BDF8" : bgCard, color: mode === "pomodoro" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 16px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
-              🍅 Pomodoro Modu
-            </button>
-          </div>
-
-
-          {/* DERS KRONOMETRESİ */}
-          {mode === "kronometre" && (
-            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>DERS ÇALIŞMA KRONOMETRESİ</p>
-              <div style={{ margin: "15px 0", fontSize: "40px", fontWeight: "bold", fontFamily: "serif" }}>
-                {formatClock(elapsed)}
-              </div>
-              <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "14px" }}>
-                <input placeholder="Ne çalışıyorsun? (ör. Matematik)" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={isRunning} style={{ width: "100%", maxWidth: "280px", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
-              </div>
-              <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                <button onClick={handleStartPause} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
-                  {isRunning ? "Duraklat" : "Başla"}
-                </button>
-                <button onClick={handleFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
-                  Bitir ve Kaydet
-                </button>
-                <button onClick={handleReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
-                  Sıfırla
-                </button>
-              </div>
-            </div>
-          )}
-
-
-          {/* POMODORO MODU */}
-          {mode === "pomodoro" && (
-            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>POMODORO GERİ SAYIM</p>
-              
-              <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "10px 0 15px" }}>
-                {[20, 25, 45, 50].map((m) => (
-                  <button key={m} onClick={() => selectPomoTime(m)} style={{ background: pomoMinutes === m ? "#38BDF8" : bgInner, color: pomoMinutes === m ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "6px", padding: "4px 10px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>
-                    {m} dk
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ margin: "15px 0", fontSize: "42px", fontWeight: "bold", fontFamily: "serif", color: "#F59E0B" }}>
-                {formatClock(pomoSecondsLeft)}
-              </div>
-
-              <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "14px" }}>
-                <input placeholder="Pomodoro Dersi (ör. Fizik)" value={pomoSubject} onChange={(e) => setPomoSubject(e.target.value)} disabled={isPomoRunning} style={{ width: "100%", maxWidth: "280px", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
-              </div>
-
-              <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                <button onClick={() => setIsPomoRunning(!isPomoRunning)} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
-                  {isPomoRunning ? "Duraklat" : "Başla"}
-                </button>
-                <button onClick={handlePomoFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
-                  Bitir ve Kaydet
-                </button>
-                <button onClick={() => { setIsPomoRunning(false); setPomoSecondsLeft(pomoMinutes * 60); pomoRemainingAtPauseRef.current = pomoMinutes * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
-                  Sıfırla
-                </button>
-              </div>
-            </div>
-          )}
-
-
-          {/* PARAGRAF KRONOMETRESİ */}
-          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", textAlign: "center" }}>
-            <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>PARAGRAF / SORU KRONOMETRESİ</p>
-            <div style={{ margin: "15px 0", fontSize: "38px", fontWeight: "bold", fontFamily: "serif", color: "#2DD4BF" }}>
-              {formatClock(pElapsed)}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "16px" }}>
-              <span style={{ fontSize: "14px", color: textMuted }}>Çözülen Soru:</span>
-              <span style={{ fontSize: "20px", fontWeight: 700 }}>{pCount} adet</span>
-            </div>
-            <div style={{ display: "flex", gap: "6px", justifyContent: "center", marginBottom: "16px" }}>
-              <button onClick={() => setPCount(c => Math.max(0, c - 5))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontWeight: "bold", cursor: "pointer" }}>-5</button>
-              <button onClick={() => setPCount(c => Math.max(0, c - 1))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontWeight: "bold", cursor: "pointer" }}>-1</button>
-              <button onClick={() => setPCount(c => c + 1)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "6px 14px", fontWeight: "bold", cursor: "pointer" }}>+1</button>
-              <button onClick={() => setPCount(c => c + 5)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "6px 14px", fontWeight: "bold", cursor: "pointer" }}>+5</button>
-            </div>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-              <button onClick={handlePStartPause} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
-                {pIsRunning ? "Duraklat" : "Başla"}
-              </button>
-              <button onClick={handlePFinish} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
-                Bitir ve Kaydet
-              </button>
-              <button onClick={handlePReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
-                Sıfırla
-              </button>
-            </div>
-          </div>
-
-
-          {/* HAFTALIK PERFORMANS GRAFİĞİ */}
-          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
-            <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 16px", fontWeight: 600 }}>📊 Haftalık Performans Grafiği</p>
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "130px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}` }}>
-              {weekData.map((d, i) => {
-                const heightPct = Math.max(8, Math.round((d.dakika / maxWeekMin) * 100));
-                return (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, height: "100%", justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: "10px", color: textMuted, marginBottom: "4px" }}>{d.dakika}d</span>
-                    <div style={{ width: "70%", maxWidth: "28px", height: `${heightPct}%`, background: d.dakika > 0 ? "#38BDF8" : bgInner, borderRadius: "6px 6px 0 0", transition: "height 0.4s ease" }}></div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "8px" }}>
-              {weekData.map((d, i) => (
-                <div key={i} style={{ flex: 1, textAlign: "center", fontSize: "11px", color: textMuted, fontWeight: 500 }}>
-                  {d.label}
+              {/* GÜNLÜK HEDEF VE AYARLAR KARTI */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: textMuted }}>🎯 Günlük Hedefler ve İlerleme</span>
                 </div>
-              ))}
-            </div>
-          </div>
 
-
-          {/* DERSLERE GÖRE DAĞILIM ÖZETİ */}
-          {subjectDistribution.length > 0 && (
-            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
-              <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Derslere Göre Toplam Dağılım</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {subjectDistribution.map(([subj, mins]) => (
-                  <div key={subj} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", background: bgInner, padding: "8px 12px", borderRadius: "8px", border: `1px solid ${borderCard}` }}>
-                    <span style={{ fontWeight: 600 }}>{subj}</span>
-                    <span>{formatMinutes(mins)}</span>
+                <div style={{ marginBottom: "14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
+                    <span>Çalışma: <strong>{todayMinutes} dk</strong> / <input type="number" value={targetStudyMins} onChange={(e) => updateTargetMins(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "4px", padding: "2px 4px", fontSize: "12px", textAlign: "center" }} /> dk</span>
+                    <span style={{ color: textMuted }}>%{Math.round((todayMinutes / targetStudyMins) * 100)}</span>
                   </div>
-                ))}
+                  <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.min(100, (todayMinutes / targetStudyMins) * 100)}%`, background: "#38BDF8", height: "100%", transition: "width 0.3s ease" }}></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
+                    <span>Paragraf: <strong>{todayParagraphCount} soru</strong> / <input type="number" value={targetParagraphs} onChange={(e) => updateTargetParagraphs(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "4px", padding: "2px 4px", fontSize: "12px", textAlign: "center" }} /> soru</span>
+                    <span style={{ color: textMuted }}>%{Math.round((todayParagraphCount / targetParagraphs) * 100)}</span>
+                  </div>
+                  <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.min(100, (todayParagraphCount / targetParagraphs) * 100)}%`, background: "#2DD4BF", height: "100%", transition: "width 0.3s ease" }}></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* MOD SEÇİMİ */}
+              <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginBottom: "16px" }}>
+                <button onClick={() => setMode("kronometre")} style={{ background: mode === "kronometre" ? "#38BDF8" : bgCard, color: mode === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 16px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
+                  ⏱️ Kronometre
+                </button>
+                <button onClick={() => setMode("pomodoro")} style={{ background: mode === "pomodoro" ? "#38BDF8" : bgCard, color: mode === "pomodoro" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 16px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
+                  🍅 Pomodoro Modu
+                </button>
+              </div>
+
+              {/* DERS KRONOMETRESİ */}
+              {mode === "kronometre" && (
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", textAlign: "center" }}>
+                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>DERS ÇALIŞMA KRONOMETRESİ</p>
+                  <div style={{ margin: "15px 0", fontSize: "40px", fontWeight: "bold", fontFamily: "serif" }}>
+                    {formatClock(elapsed)}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "14px" }}>
+                    <input placeholder="Ne çalışıyorsun? (ör. Matematik)" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={isRunning} style={{ width: "100%", maxWidth: "280px", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
+                  </div>
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                    <button onClick={handleStartPause} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                      {isRunning ? "Duraklat" : "Başla"}
+                    </button>
+                    <button onClick={handleFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                      Bitir ve Kaydet
+                    </button>
+                    <button onClick={handleReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
+                      Sıfırla
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* POMODORO MODU */}
+              {mode === "pomodoro" && (
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", textAlign: "center" }}>
+                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>POMODORO GERİ SAYIM</p>
+                  
+                  <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "10px 0 15px" }}>
+                    {[20, 25, 45, 50].map((m) => (
+                      <button key={m} onClick={() => selectPomoTime(m)} style={{ background: pomoMinutes === m ? "#38BDF8" : bgInner, color: pomoMinutes === m ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "6px", padding: "4px 10px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>
+                        {m} dk
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ margin: "15px 0", fontSize: "42px", fontWeight: "bold", fontFamily: "serif", color: "#F59E0B" }}>
+                    {formatClock(pomoSecondsLeft)}
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "14px" }}>
+                    <input placeholder="Pomodoro Dersi (ör. Fizik)" value={pomoSubject} onChange={(e) => setPomoSubject(e.target.value)} disabled={isPomoRunning} style={{ width: "100%", maxWidth: "280px", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                    <button onClick={() => setIsPomoRunning(!isPomoRunning)} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                      {isPomoRunning ? "Duraklat" : "Başla"}
+                    </button>
+                    <button onClick={handlePomoFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                      Bitir ve Kaydet
+                    </button>
+                    <button onClick={() => { setIsPomoRunning(false); setPomoSecondsLeft(pomoMinutes * 60); pomoRemainingAtPauseRef.current = pomoMinutes * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
+                      Sıfırla
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* PARAGRAF KRONOMETRESİ */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", textAlign: "center" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px" }}>PARAGRAF / SORU KRONOMETRESİ</p>
+                <div style={{ margin: "15px 0", fontSize: "38px", fontWeight: "bold", fontFamily: "serif", color: "#2DD4BF" }}>
+                  {formatClock(pElapsed)}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "16px" }}>
+                  <span style={{ fontSize: "14px", color: textMuted }}>Çözülen Soru:</span>
+                  <span style={{ fontSize: "20px", fontWeight: 700 }}>{pCount} adet</span>
+                </div>
+                <div style={{ display: "flex", gap: "6px", justifyContent: "center", marginBottom: "16px" }}>
+                  <button onClick={() => setPCount(c => Math.max(0, c - 5))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontWeight: "bold", cursor: "pointer" }}>-5</button>
+                  <button onClick={() => setPCount(c => Math.max(0, c - 1))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontWeight: "bold", cursor: "pointer" }}>-1</button>
+                  <button onClick={() => setPCount(c => c + 1)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "6px 14px", fontWeight: "bold", cursor: "pointer" }}>+1</button>
+                  <button onClick={() => setPCount(c => c + 5)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "6px 14px", fontWeight: "bold", cursor: "pointer" }}>+5</button>
+                </div>
+                <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                  <button onClick={handlePStartPause} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                    {pIsRunning ? "Duraklat" : "Başla"}
+                  </button>
+                  <button onClick={handlePFinish} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                    Bitir ve Kaydet
+                  </button>
+                  <button onClick={handlePReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "14px" }}>
+                    Sıfırla
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
 
-          {/* ÖZET KARTLARI */}
+          {/* 2. İSTATİSTİKLER SEKMESİ */}
+          {activeTab === "istatistik" && (
+            <div>
+              {/* HAFTALIK ÇALIŞMA TABLOSU VE GRAFİĞİ */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 16px", fontWeight: 600 }}>📊 Haftalık Performans Grafiği</p>
+                
+                {/* Çubuk Grafik */}
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "120px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}`, marginBottom: "12px" }}>
+                  {weekData.map((d, i) => {
+                    const heightPct = Math.max(8, Math.round((d.dakika / maxWeekMin) * 100));
+                    return (
+                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, height: "100%", justifyContent: "flex-end" }}>
+                        <span style={{ fontSize: "10px", color: textMuted, marginBottom: "4px" }}>{d.dakika}d</span>
+                        <div style={{ width: "70%", maxWidth: "26px", height: `${heightPct}%`, background: d.dakika > 0 ? "#38BDF8" : bgInner, borderRadius: "6px 6px 0 0", transition: "height 0.4s ease" }}></div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Günlük Dakika Tablosu Kutucukları */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", textAlign: "center" }}>
+                  {weekData.map((d, i) => (
+                    <div key={i} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 2px" }}>
+                      <p style={{ fontSize: "10px", color: textMuted, margin: "0 0 4px" }}>{d.label}</p>
+                      <p style={{ fontSize: "12px", fontWeight: 600, margin: 0 }}>{d.dakika}d</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* DERSLERE GÖRE DAĞILIM ÖZETİ */}
+              {subjectDistribution.length > 0 && (
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
+                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Derslere Göre Toplam Dağılım</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {subjectDistribution.map(([subj, mins]) => (
+                      <div key={subj} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", background: bgInner, padding: "8px 12px", borderRadius: "8px", border: `1px solid ${borderCard}` }}>
+                        <span style={{ fontWeight: 600 }}>{subj}</span>
+                        <span>{formatMinutes(mins)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+
+          {/* ÖZET KARTLARI (HER İKİ SEKMEDE DE GÖRÜNÜR) */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
             <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px" }}>
               <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün ders</p>
@@ -550,7 +596,7 @@
             </div>
           </div>
 
-          {/* Geçmiş Oturumlar */}
+          {/* GEÇMİŞ OTURUMLAR (HER İKİ SEKMEDE DE GÖRÜNÜR) */}
           <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px" }}>
             <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Geçmiş oturumlar</p>
             {sessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kayıt yok.</p>}
