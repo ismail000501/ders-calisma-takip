@@ -26,17 +26,13 @@
       50% { opacity: 0.7; transform: scale(1.02); }
       100% { opacity: 1; transform: scale(1); }
     }
-    .exam-danger {
-      animation: pulseAlert 1s infinite;
-    }
+    .exam-danger { animation: pulseAlert 1s infinite; }
     @keyframes floatTree {
       0% { transform: translateY(0px); }
       50% { transform: translateY(-4px); }
       100% { transform: translateY(0px); }
     }
-    .tree-animate {
-      animation: floatTree 3s ease-in-out infinite;
-    }
+    .tree-animate { animation: floatTree 3s ease-in-out infinite; }
   </style>
 </head>
 <body>
@@ -174,8 +170,7 @@
           const now = new Date();
           const diff = targetDate - now;
           if (diff > 0) {
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            setKpssDaysLeft(days);
+            setKpssDaysLeft(Math.floor(diff / (1000 * 60 * 60 * 24)));
           } else {
             setKpssDaysLeft(0);
           }
@@ -199,38 +194,14 @@
       const [newWrongText, setNewWrongText] = useState("");
 
       useEffect(() => {
-        try {
-          const t = localStorage.getItem("study-theme");
-          if (t) setTheme(t);
-        } catch (e) {}
-        try {
-          const s = localStorage.getItem("study-sessions-v8");
-          if (s) setSessions(JSON.parse(s));
-        } catch (e) {}
-        try {
-          const e = localStorage.getItem("study-exams-v1");
-          if (e) setExams(JSON.parse(e));
-        } catch (e) {}
-        try {
-          const tm = localStorage.getItem("study-topic-mins-v1");
-          if (tm) setTopicMinutes(JSON.parse(tm));
-        } catch (e) {}
-        try {
-          const dn = localStorage.getItem("study-daily-notes-v1");
-          if (dn) setDailyNotes(JSON.parse(dn));
-        } catch (e) {}
-        try {
-          const wn = localStorage.getItem("study-wrong-notes-v1");
-          if (wn) setWrongNotes(JSON.parse(wn));
-        } catch (e) {}
-        try {
-          const fc = localStorage.getItem("study-flashcards-v1");
-          if (fc) setFlashcards(JSON.parse(fc));
-        } catch (e) {}
-        try {
-          const fcCount = localStorage.getItem("study-forest-count-v1");
-          if (fcCount) setForestCount(Number(fcCount));
-        } catch (e) {}
+        try { const t = localStorage.getItem("study-theme"); if (t) setTheme(t); } catch (e) {}
+        try { const s = localStorage.getItem("study-sessions-v8"); if (s) setSessions(JSON.parse(s)); } catch (e) {}
+        try { const e = localStorage.getItem("study-exams-v1"); if (e) setExams(JSON.parse(e)); } catch (e) {}
+        try { const tm = localStorage.getItem("study-topic-mins-v1"); if (tm) setTopicMinutes(JSON.parse(tm)); } catch (e) {}
+        try { const dn = localStorage.getItem("study-daily-notes-v1"); if (dn) setDailyNotes(JSON.parse(dn)); } catch (e) {}
+        try { const wn = localStorage.getItem("study-wrong-notes-v1"); if (wn) setWrongNotes(JSON.parse(wn)); } catch (e) {}
+        try { const fc = localStorage.getItem("study-flashcards-v1"); if (fc) setFlashcards(JSON.parse(fc)); } catch (e) {}
+        try { const fcCount = localStorage.getItem("study-forest-count-v1"); if (fcCount) setForestCount(Number(fcCount)); } catch (e) {}
         try {
           const tp = localStorage.getItem("study-topics-v3");
           if (tp) {
@@ -248,14 +219,8 @@
             localStorage.setItem("study-topics-v3", JSON.stringify(initialMap));
           }
         } catch (e) {}
-        try {
-          const ts = localStorage.getItem("study-target-mins-v2");
-          if (ts) setTargetStudyMins(Number(ts));
-        } catch (e) {}
-        try {
-          const tpTarget = localStorage.getItem("study-target-p-v2");
-          if (tpTarget) setTargetParagraphs(Number(tpTarget));
-        } catch (e) {}
+        try { const ts = localStorage.getItem("study-target-mins-v2"); if (ts) setTargetStudyMins(Number(ts)); } catch (e) {}
+        try { const tpTarget = localStorage.getItem("study-target-p-v2"); if (tpTarget) setTargetParagraphs(Number(tpTarget)); } catch (e) {}
         setLoaded(true);
       }, []);
 
@@ -347,8 +312,7 @@
         const nextList = [card, ...flashcards];
         setFlashcards(nextList);
         try { localStorage.setItem("study-flashcards-v1", JSON.stringify(nextList)); } catch (e) {}
-        setFcFront("");
-        setFcBack("");
+        setFcFront(""); setFcBack("");
       };
 
       const deleteFlashcard = (id) => {
@@ -613,6 +577,17 @@
         return streak;
       }, [sessions]);
 
+      // Başarı Rozetleri Hesaplama
+      const badges = useMemo(() => {
+        return [
+          { id: 1, title: "🚀 İlk Adım", desc: "İlk çalışma oturumunu kaydet", unlocked: sessions.length > 0 },
+          { id: 2, title: "🔥 İstikrarlı", desc: "3 günlük çalışma serisi yakala", unlocked: streakCount >= 3 },
+          { id: 3, title: "🌲 Doğa Sever", desc: "Ormanında en az 3 ağaç büyüt", unlocked: forestCount >= 3 },
+          { id: 4, title: "📚 Soru Canavarı", desc: "Toplam 100 soru/paragraf çöz", unlocked: sessions.filter(s => s.count).reduce((a,b)=>a+b.count, 0) >= 100 },
+          { id: 5, title: "🎯 ÖSYM Adayı", desc: "En az 3 deneme sonucu kaydet", unlocked: exams.length >= 3 }
+        ];
+      }, [sessions, streakCount, forestCount, exams]);
+
       const filteredSessions = useMemo(() => {
         if (!filterDate) return sessions;
         return sessions.filter(s => s.date === filterDate);
@@ -669,6 +644,17 @@
         ];
         avgs.sort((a, b) => a.val - b.val);
         return `Son denemelere göre öncelik vermen gereken ders: ${avgs[0].name} (Ort. Net: ${avgs[0].val.toFixed(1)})`;
+      }, [exams]);
+
+      // KPSS P3 / P93 Puan Tahmin Simülatörü (Ortalama formül tabanlı)
+      const estimatedScore = useMemo(() => {
+        if (!exams || exams.length === 0) return 0;
+        const lastEx = exams[0];
+        // Yaklaşık katsayılara göre genel yetenek + genel kültür netinden puan tahmini
+        const base = 40;
+        const netScore = (lastEx.total || 0) * 0.85;
+        const score = base + netScore;
+        return Math.min(100, Math.max(40, score)).toFixed(2);
       }, [exams]);
 
       const isExamCritical = examSecondsLeft <= 300 && examSecondsLeft > 0;
@@ -837,6 +823,19 @@
                   </div>
                 </div>
               )}
+
+              {/* PROFESYONEL BAŞARI ROZETLERİ KUTUSU */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 12px", color: "#38BDF8" }}>🏆 Kariyer Rozetleri & Başarılar</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {badges.map(b => (
+                    <div key={b.id} style={{ background: b.unlocked ? bgInner : bgCard, opacity: b.unlocked ? 1 : 0.5, border: `1px solid ${b.unlocked ? "#38BDF8" : borderCard}`, borderRadius: "12px", padding: "10px" }}>
+                      <p style={{ fontSize: "12px", fontWeight: 800, margin: "0 0 2px" }}>{b.title}</p>
+                      <p style={{ fontSize: "10px", color: textMuted, margin: 0, fontWeight: 600 }}>{b.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 10px", color: textMuted }}>📝 Bugünün Notu / Hedef Özeti</p>
@@ -1038,6 +1037,17 @@
 
           {activeTab === "denemeler" && (
             <div>
+              {/* PROFESYONEL PUAN SİMÜLATÖRÜ */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <p style={{ fontSize: "12px", fontWeight: 800, margin: "0 0 2px", color: textMuted }}>🎯 TAHMİNİ KPSS P3 PUANI</p>
+                  <p style={{ fontSize: "24px", fontWeight: 800, margin: 0, color: "#2DD4BF" }}>{estimatedScore}</p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <span style={{ fontSize: "11px", color: textMuted, background: bgInner, padding: "6px 10px", borderRadius: "8px", fontWeight: 700 }}>Son Denemeye Göre</span>
+                </div>
+              </div>
+
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px" }}>
                 <p style={{ fontSize: "13px", fontWeight: 800, margin: "0 0 6px", color: "#38BDF8" }}>🧠 Yapay Koç Deneme Analizi</p>
                 <p style={{ fontSize: "13px", margin: 0, fontWeight: 600, lineHeight: 1.4 }}>{weakSubjectAnalysis}</p>
