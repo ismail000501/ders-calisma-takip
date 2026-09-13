@@ -40,7 +40,6 @@
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
-    // KPSS ve ÖSYM Kapsamlı Tüm Dersler ve Konuları
     const KPSS_TOPICS_DEFAULT = {
       "Türkçe": [
         "Sözcükte Anlam", "Cümlede Anlam", "Paragraf ve Anlatım Biçimleri", "Ses Bilgisi", 
@@ -108,7 +107,7 @@
       const [topicMinutes, setTopicMinutes] = useState({});
       
       const [activeTab, setActiveTab] = useState("sayac");
-      const [mode, setMode] = useState("kronometre");
+      const [sayacSubMode, setSayacSubMode] = useState("kronometre"); // "kronometre", "pomodoro", "paragraf"
       const [filterDate, setFilterDate] = useState("");
       const [menuOpen, setMenuOpen] = useState(false);
 
@@ -137,7 +136,7 @@
       const pAccumulatedTimeRef = useRef(0);
       const pTickRef = useRef(null);
 
-      // Deneme Geri Sayım State'leri (Süreyle Yarışma Havası)
+      // Deneme Geri Sayım State'leri
       const [examDurationMins, setExamDurationMins] = useState(135);
       const [examSecondsLeft, setExamSecondsLeft] = useState(135 * 60);
       const [isExamRunning, setIsExamRunning] = useState(false);
@@ -315,7 +314,7 @@
         return () => { if (pTickRef.current) clearInterval(pTickRef.current); };
       }, [pIsRunning]);
 
-      // 4. Deneme Geri Sayım Kronometresi (Süreyle Yarışma Havası - Arka planda asla şaşmaz)
+      // 4. Deneme Geri Sayım Kronometresi (Arka planda asla şaşmaz)
       useEffect(() => {
         if (isExamRunning) {
           examEndTimeRef.current = Date.now() + (examRemainingAtPauseRef.current * 1000);
@@ -533,14 +532,6 @@
         return sessions.filter(s => s.date === filterDate);
       }, [sessions, filterDate]);
 
-      const subjectDistribution = useMemo(() => {
-        const map = {};
-        sessions.filter(s => s.type !== "paragraf").forEach(s => {
-          map[s.subject] = (map[s.subject] || 0) + s.minutes;
-        });
-        return Object.entries(map).sort((a, b) => b[1] - a[1]);
-      }, [sessions]);
-
       const weekData = useMemo(() => {
         const now = new Date();
         const monday = new Date(now);
@@ -564,7 +555,6 @@
         return list.reduce((acc, t) => acc + (topicMinutes[`${activeTopicSubj}_${t.id}`] || 0), 0);
       }, [topics, topicMinutes, activeTopicSubj]);
 
-      // Sınavda son 5 dakika kala tehlike rengi ve uyarı havası
       const isExamCritical = examSecondsLeft <= 300 && examSecondsLeft > 0;
       const examClockColor = isExamCritical ? "#F43F5E" : "#F59E0B";
 
@@ -644,7 +634,7 @@
           </div>
 
 
-          {/* 1. SAYAÇ SEKMESİ */}
+          {/* 1. SAYAÇ SEKMESİ (KLASÖRLERE AYRILMIŞ YAPILI SAYAÇ) */}
           {activeTab === "sayac" && (
             <div>
               {/* GÜNLÜK HEDEF VE AYARLAR */}
@@ -674,18 +664,21 @@
                 </div>
               </div>
 
-              {/* MOD SEÇİMİ */}
-              <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginBottom: "16px" }}>
-                <button onClick={() => setMode("kronometre")} style={{ background: mode === "kronometre" ? "#38BDF8" : bgCard, color: mode === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 18px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
-                  ⏱️ Kronometre
+              {/* SAYAÇ İÇİNDEKİ KLASÖRLER (SEKMELER) */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "16px" }}>
+                <button onClick={() => setSayacSubMode("kronometre")} style={{ background: sayacSubMode === "kronometre" ? "#38BDF8" : bgCard, color: sayacSubMode === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
+                  ⏱️ Ders Sayaç
                 </button>
-                <button onClick={() => setMode("pomodoro")} style={{ background: mode === "pomodoro" ? "#38BDF8" : bgCard, color: mode === "pomodoro" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 18px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
+                <button onClick={() => setSayacSubMode("pomodoro")} style={{ background: sayacSubMode === "pomodoro" ? "#38BDF8" : bgCard, color: sayacSubMode === "pomodoro" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
                   🍅 Pomodoro
+                </button>
+                <button onClick={() => setSayacSubMode("paragraf")} style={{ background: sayacSubMode === "paragraf" ? "#38BDF8" : bgCard, color: sayacSubMode === "paragraf" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
+                  📖 Paragraf
                 </button>
               </div>
 
-              {/* DERS KRONOMETRESİ */}
-              {mode === "kronometre" && (
+              {/* DERS KRONOMETRESİ KLASÖRÜ */}
+              {sayacSubMode === "kronometre" && (
                 <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
                   <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>DERS ÇALIŞMA KRONOMETRESİ</p>
                   <div style={{ margin: "15px 0", fontSize: "42px", fontWeight: "bold", fontFamily: "serif" }}>
@@ -708,8 +701,8 @@
                 </div>
               )}
 
-              {/* POMODORO MODU */}
-              {mode === "pomodoro" && (
+              {/* POMODORO KLASÖRÜ */}
+              {sayacSubMode === "pomodoro" && (
                 <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
                   <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>POMODORO GERİ SAYIM</p>
                   
@@ -743,34 +736,36 @@
                 </div>
               )}
 
-              {/* PARAGRAF KRONOMETRESİ */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>PARAGRAF / SORU KRONOMETRESİ</p>
-                <div style={{ margin: "15px 0", fontSize: "40px", fontWeight: "bold", fontFamily: "serif", color: "#2DD4BF" }}>
-                  {formatClock(pElapsed)}
+              {/* PARAGRAF KRONOMETRESİ KLASÖRÜ */}
+              {sayacSubMode === "paragraf" && (
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
+                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>PARAGRAF / SORU KRONOMETRESİ</p>
+                  <div style={{ margin: "15px 0", fontSize: "40px", fontWeight: "bold", fontFamily: "serif", color: "#2DD4BF" }}>
+                    {formatClock(pElapsed)}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "16px" }}>
+                    <span style={{ fontSize: "14px", color: textMuted }}>Çözülen Soru:</span>
+                    <span style={{ fontSize: "20px", fontWeight: 700 }}>{pCount} adet</span>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px" }}>
+                    <button onClick={() => setPCount(c => Math.max(0, c - 5))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: "bold", cursor: "pointer" }}>-5</button>
+                    <button onClick={() => setPCount(c => Math.max(0, c - 1))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: "bold", cursor: "pointer" }}>-1</button>
+                    <button onClick={() => setPCount(c => c + 1)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "10px", padding: "8px 16px", fontWeight: "bold", cursor: "pointer" }}>+1</button>
+                    <button onClick={() => setPCount(c => c + 5)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "10px", padding: "8px 16px", fontWeight: "bold", cursor: "pointer" }}>+5</button>
+                  </div>
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                    <button onClick={handlePStartPause} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                      {pIsRunning ? "Duraklat" : "Başla"}
+                    </button>
+                    <button onClick={handlePFinish} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                      Bitir ve Kaydet
+                    </button>
+                    <button onClick={handlePReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 16px", cursor: "pointer", fontSize: "14px" }}>
+                      Sıfırla
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "16px" }}>
-                  <span style={{ fontSize: "14px", color: textMuted }}>Çözülen Soru:</span>
-                  <span style={{ fontSize: "20px", fontWeight: 700 }}>{pCount} adet</span>
-                </div>
-                <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px" }}>
-                  <button onClick={() => setPCount(c => Math.max(0, c - 5))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: "bold", cursor: "pointer" }}>-5</button>
-                  <button onClick={() => setPCount(c => Math.max(0, c - 1))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: "bold", cursor: "pointer" }}>-1</button>
-                  <button onClick={() => setPCount(c => c + 1)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "10px", padding: "8px 16px", fontWeight: "bold", cursor: "pointer" }}>+1</button>
-                  <button onClick={() => setPCount(c => c + 5)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "10px", padding: "8px 16px", fontWeight: "bold", cursor: "pointer" }}>+5</button>
-                </div>
-                <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                  <button onClick={handlePStartPause} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
-                    {pIsRunning ? "Duraklat" : "Başla"}
-                  </button>
-                  <button onClick={handlePFinish} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
-                    Bitir ve Kaydet
-                  </button>
-                  <button onClick={handlePReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 16px", cursor: "pointer", fontSize: "14px" }}>
-                    Sıfırla
-                  </button>
-                </div>
-              </div>
+              )}
 
               {/* ÖZET KARTLARI */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
@@ -940,13 +935,12 @@
           )}
 
 
-          {/* 4. DENEMELER SEKMESİ (ÖSYM / KPSS SÜREYLE YARIŞMA AMİRAL GEMİSİ) */}
+          {/* 4. DENEMELER SEKMESİ */}
           {activeTab === "denemeler" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "20px", marginBottom: "20px", textAlign: "center" }}>
-                <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 6px", fontWeight: 700, letterSpacing: "1px" }}> ÖSYM SINAV SALONU SÜREÇ YÖNETİMİ</p>
+                <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 6px", fontWeight: 700, letterSpacing: "1px" }}>⏳ ÖSYM SINAV SALONU SÜREÇ YÖNETİMİ</p>
                 
-                {/* Sınav Süresi Seçenekleri */}
                 <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "12px 0 16px" }}>
                   {[100, 135, 150, 180].map((mins) => (
                     <button key={mins} onClick={() => selectExamDuration(mins)} style={{ background: examDurationMins === mins ? examClockColor : bgInner, color: examDurationMins === mins ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>
@@ -955,7 +949,6 @@
                   ))}
                 </div>
 
-                {/* Geri Sayım Saat Göstergesi (Kritik Dakikalarda Yanıp Sönen Efekt) */}
                 <div className={isExamCritical ? "exam-danger" : ""} style={{ margin: "15px 0", fontSize: "46px", fontWeight: "bold", fontFamily: "serif", color: examClockColor, textShadow: isExamCritical ? "0 0 15px rgba(244,63,94,0.4)" : "none" }}>
                   {formatClock(examSecondsLeft)}
                 </div>
