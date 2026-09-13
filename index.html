@@ -107,7 +107,7 @@
       const [topicMinutes, setTopicMinutes] = useState({});
       
       const [activeTab, setActiveTab] = useState("sayac");
-      const [sayacFolder, setSayacFolder] = useState("kronometre"); // "kronometre", "pomodoro", "paragraf"
+      const [sayacFolder, setSayacFolder] = useState("kronometre");
       const [filterDate, setFilterDate] = useState("");
       const [menuOpen, setMenuOpen] = useState(false);
 
@@ -259,7 +259,7 @@
         try { localStorage.setItem("study-target-p-v2", String(v)); } catch (e) {}
       };
 
-      // 1. Ders Kronometre (Arka planda asla şaşmaz)
+      // 1. Ders Kronometre
       useEffect(() => {
         if (isRunning) {
           startTimeRef.current = Date.now();
@@ -275,7 +275,7 @@
         return () => { if (tickRef.current) clearInterval(tickRef.current); };
       }, [isRunning]);
 
-      // 2. Pomodoro (Arka planda asla şaşmaz)
+      // 2. Pomodoro
       useEffect(() => {
         if (isPomoRunning) {
           pomoEndTimeRef.current = Date.now() + (pomoRemainingAtPauseRef.current * 1000);
@@ -298,7 +298,7 @@
         return () => { if (pomoTickRef.current) clearInterval(pomoTickRef.current); };
       }, [isPomoRunning]);
 
-      // 3. Paragraf Kronometre (Arka planda asla şaşmaz)
+      // 3. Paragraf Kronometre
       useEffect(() => {
         if (pIsRunning) {
           pStartTimeRef.current = Date.now();
@@ -314,7 +314,7 @@
         return () => { if (pTickRef.current) clearInterval(pTickRef.current); };
       }, [pIsRunning]);
 
-      // 4. Deneme Geri Sayım Kronometresi (Arka planda asla şaşmaz)
+      // 4. Deneme Geri Sayım Kronometresi
       useEffect(() => {
         if (isExamRunning) {
           examEndTimeRef.current = Date.now() + (examRemainingAtPauseRef.current * 1000);
@@ -533,22 +533,39 @@
       }, [sessions, filterDate]);
 
       const weekData = useMemo(() => {
-        const now = new Date();
-        const monday = new Date(now);
-        monday.setDate(now.getDate() - mondayIndex(now));
-        const days = [];
-        for (let i = 0; i < 7; i++) {
-          const d = new Date(monday);
-          d.setDate(monday.getDate() + i);
-          const dISO = isoDay(d);
-          const mins = sessions.filter((s) => s.date === dISO && s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
-          days.push({ label: DAYS[i], dakika: mins });
+        try {
+          const now = new Date();
+          const monday = new Date(now);
+          monday.setDate(now.getDate() - mondayIndex(now));
+          const days = [];
+          for (let i = 0; i < 7; i++) {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            const dISO = isoDay(d);
+            const mins = sessions.filter((s) => s && s.date === dISO && s.type !== "paragraf").reduce((a, s) => a + (Number(s.minutes) || 0), 0);
+            days.push({ label: DAYS[i], dakika: mins });
+          }
+          return days;
+        } catch (err) {
+          return DAYS.map(d => ({ label: d, dakika: 0 }));
         }
-        return days;
       }, [sessions]);
 
       const weekMinutes = weekData.reduce((a, d) => a + d.dakika, 0);
       const maxWeekMin = Math.max(1, ...weekData.map(d => d.dakika));
+
+      const subjectDistribution = useMemo(() => {
+        try {
+          const map = {};
+          sessions.filter(s => s && s.type !== "paragraf").forEach(s => {
+            const subjName = s.subject || "Genel";
+            map[subjName] = (map[subjName] || 0) + (Number(s.minutes) || 0);
+          });
+          return Object.entries(map).sort((a, b) => b[1] - a[1]);
+        } catch (err) {
+          return [];
+        }
+      }, [sessions]);
 
       const activeSubjectTotalMins = useMemo(() => {
         const list = topics[activeTopicSubj] || [];
@@ -637,7 +654,6 @@
           {/* 1. SAYAÇ SEKMESİ */}
           {activeTab === "sayac" && (
             <div>
-              {/* GÜNLÜK HEDEF VE AYARLAR */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 600, color: textMuted }}>🎯 Günlük Hedefler ve İlerleme</span>
@@ -664,7 +680,7 @@
                 </div>
               </div>
 
-              {/* SAYAÇ İÇİNDEKİ SEÇENEKLİ KLASÖRLER */}
+              {/* SAYAÇ İÇİNDEKİ KLASÖRLER */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "16px" }}>
                 <button onClick={() => setSayacFolder("kronometre")} style={{ background: sayacFolder === "kronometre" ? "#38BDF8" : bgCard, color: sayacFolder === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
                   ⏱️ Ders Sayaç
@@ -812,7 +828,7 @@
           )}
 
 
-          {/* 2. İSTATİSTİKLER SEKMESİ (SİYAH KALMA SORUNU GİDERİLDİ) */}
+          {/* 2. İSTATİSTİKLER SEKMESİ (HATASIZ VE GÜVENLİ) */}
           {activeTab === "istatistik" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
