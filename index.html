@@ -17,7 +17,6 @@
       padding: 0;
       width: 100%;
       min-height: 100vh;
-      background: #0B0F19;
       font-family: 'Inter', sans-serif;
       touch-action: manipulation;
       -webkit-text-size-adjust: 100%;
@@ -41,11 +40,11 @@
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
     const MOTIVATIONS = [
-      "Bugün döktüğün her damla alın teri, yarınki zaferinin immesidir.",
+      "Bugün döktüğün her damla alın teri, yarınki zaferinin temelidir.",
       "Vazgeçmek üzere olduğunda, ne kadar ileri geldiğini hatırla.",
       "ÖSYM salonunda yüzünü güldürecek olan bugünkü disiplindir.",
       "Küçük adımlar büyük başarıları doğurur. Masadan kalkma!",
-      "Zorluklar başarının değerini artıran süslerdir.",
+      "Zorluklar başarının değerini artıran en büyük unsurlardır.",
       "Bugün çalışmadığın her saat, rakibinin öne geçtiği saattir."
     ];
 
@@ -109,19 +108,25 @@
 
     function StudyTracker() {
       const [loaded, setLoaded] = useState(false);
-      const [theme, setTheme] = useState("dark");
+      const [theme, setTheme] = useState("dark"); // "dark" | "light" | "oled"
       const [sessions, setSessions] = useState([]);
       const [exams, setExams] = useState([]);
       const [topics, setTopics] = useState({});
       const [topicMinutes, setTopicMinutes] = useState({});
       const [dailyNotes, setDailyNotes] = useState({});
       const [wrongNotes, setWrongNotes] = useState([]);
+      const [flashcards, setFlashcards] = useState([]); // [{id, front, back}]
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
       const [filterDate, setFilterDate] = useState("");
       const [menuOpen, setMenuOpen] = useState(false);
       const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
+
+      // Flashcard Ekleme State'leri
+      const [fcFront, setFcFront] = useState("");
+      const [fcBack, setFcBack] = useState("");
+      const [flippedCardId, setFlippedCardId] = useState(null);
 
       // Ders Kronometre State'leri
       const [subject, setSubject] = useState("");
@@ -220,6 +225,10 @@
             if (wn) setWrongNotes(JSON.parse(wn));
           } catch (e) {}
           try {
+            const fc = localStorage.getItem("study-flashcards-v1");
+            if (fc) setFlashcards(JSON.parse(fc));
+          } catch (e) {}
+          try {
             const tp = localStorage.getItem("study-topics-v3");
             if (tp) {
               setTopics(JSON.parse(tp));
@@ -265,10 +274,13 @@
         }
       }, [subject]);
 
-      const toggleTheme = () => {
-        const nextTheme = theme === "dark" ? "light" : "dark";
-        setTheme(nextTheme);
-        try { localStorage.setItem("study-theme", nextTheme); } catch (e) {}
+      const cycleTheme = () => {
+        let next = "dark";
+        if (theme === "dark") next = "oled";
+        else if (theme === "oled") next = "light";
+        else next = "dark";
+        setTheme(next);
+        try { localStorage.setItem("study-theme", next); } catch (e) {}
         setMenuOpen(false);
       };
 
@@ -313,6 +325,23 @@
         const nextList = wrongNotes.filter(w => w.id !== id);
         setWrongNotes(nextList);
         try { localStorage.setItem("study-wrong-notes-v1", JSON.stringify(nextList)); } catch (e) {}
+      };
+
+      const handleAddFlashcard = (e) => {
+        e.preventDefault();
+        if (!fcFront.trim() || !fcBack.trim()) return;
+        const card = { id: Date.now(), front: fcFront.trim(), back: fcBack.trim() };
+        const nextList = [card, ...flashcards];
+        setFlashcards(nextList);
+        try { localStorage.setItem("study-flashcards-v1", JSON.stringify(nextList)); } catch (e) {}
+        setFcFront("");
+        setFcBack("");
+      };
+
+      const deleteFlashcard = (id) => {
+        const nextList = flashcards.filter(c => c.id !== id);
+        setFlashcards(nextList);
+        try { localStorage.setItem("study-flashcards-v1", JSON.stringify(nextList)); } catch (e) {}
       };
 
       const updateTopicMinutesValue = (topicKey, value) => {
@@ -562,7 +591,7 @@
       };
 
       const exportData = () => {
-        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes };
+        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes, flashcards };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -585,6 +614,7 @@
             if (data.topicMinutes) saveTopicMinutes(data.topicMinutes);
             if (data.dailyNotes) setDailyNotes(data.dailyNotes);
             if (data.wrongNotes) setWrongNotes(data.wrongNotes);
+            if (data.flashcards) setFlashcards(data.flashcards);
             if (data.targetStudyMins) updateTargetMins(data.targetStudyMins);
             if (data.targetParagraphs) updateTargetParagraphs(data.targetParagraphs);
             alert("Yedek başarıyla yüklendi!");
@@ -665,16 +695,47 @@
         return list.reduce((acc, t) => acc + (topicMinutes[`${activeTopicSubj}_${t.id}`] || 0), 0);
       }, [topics, topicMinutes, activeTopicSubj]);
 
+      // En çok yanlış yapılan veya düşük net çıkarılan ders analizi (Son 5 deneme ortalamasına göre)
+      const weakSubjectAnalysis = useMemo(() => {
+        if (!exams || exams.length === 0) return "Henüz yeterli deneme verisi yok.";
+        const recentExams = exams.slice(0, 5);
+        let totalTr = 0, totalMat = 0, totalSos = 0, totalFen = 0;
+        recentExams.forEach(ex => {
+          totalTr += (ex.tr || 0);
+          totalMat += (ex.mat || 0);
+          totalSos += (ex.sos || 0);
+          totalFen += (ex.fen || 0);
+        });
+        const avgs = [
+          { name: "Türkçe", val: totalTr / recentExams.length },
+          { name: "Matematik", val: totalMat / recentExams.length },
+          { name: "Sosyal / Tarih", val: totalSos / recentExams.length },
+          { name: "Fen / Vatandaşlık", val: totalFen / recentExams.length }
+        ];
+        avgs.sort((a, b) => a.val - b.val);
+        return `Son denemelere göre en çok ağırlık vermen gereken ders: ${avgs[0].name} (Ortalama Net: ${avgs[0].val.toFixed(1)})`;
+      }, [exams]);
+
       const isExamCritical = examSecondsLeft <= 300 && examSecondsLeft > 0;
       const examClockColor = isExamCritical ? "#F43F5E" : "#F59E0B";
 
-      const isDark = theme === "dark";
-      const bgMain = isDark ? "#0B0F19" : "#F8FAFC";
-      const colorMain = isDark ? "#E2E8F0" : "#1E293B";
-      const bgCard = isDark ? "#131B2E" : "#FFFFFF";
-      const borderCard = isDark ? "#1E293B" : "#E2E8F0";
-      const textMuted = isDark ? "#94A3B8" : "#64748B";
-      const bgInner = isDark ? "#0B0F19" : "#F1F5F9";
+      // Renk Paletleri (Dark, OLED Saf Siyah, Light)
+      let bgMain = "#0B0F19", colorMain = "#E2E8F0", bgCard = "#131B2E", borderCard = "#1E293B", textMuted = "#94A3B8", bgInner = "#0B0F19";
+      if (theme === "oled") {
+        bgMain = "#000000";
+        colorMain = "#FFFFFF";
+        bgCard = "#0A0A0A";
+        borderCard = "#222222";
+        textMuted = "#A3A3A3";
+        bgInner = "#000000";
+      } else if (theme === "light") {
+        bgMain = "#F8FAFC";
+        colorMain = "#1E293B";
+        bgCard = "#FFFFFF";
+        borderCard = "#E2E8F0";
+        textMuted = "#64748B";
+        bgInner = "#F1F5F9";
+      }
 
       if (!loaded) return null;
 
@@ -744,7 +805,7 @@
                 borderRadius: "12px", 
                 boxShadow: "0 8px 20px rgba(0,0,0,0.3)", 
                 zIndex: 2000, 
-                width: "180px", 
+                width: "190px", 
                 padding: "8px" 
               }}>
                 <button onClick={exportData} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}>
@@ -755,8 +816,8 @@
                   <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
                 </label>
                 <div style={{ height: "1px", background: borderCard, margin: "4px 0" }}></div>
-                <button onClick={toggleTheme} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}>
-                  {isDark ? "🌞 Aydınlık Mod" : "🌙 Karanlık Mod"}
+                <button onClick={cycleTheme} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}>
+                  🎨 Tema: {theme === "dark" ? "Karanlık" : theme === "oled" ? "OLED Siyah" : "Aydınlık"}
                 </button>
               </div>
             )}
@@ -895,22 +956,6 @@
                 </div>
               )}
 
-              {/* ODAK / ÇALIŞMA MÜZİKLERİ HIZLI ERİŞİM */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px", textAlign: "center" }}>
-                <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 10px", color: textMuted }}>🎧 Odak Ambiyansı & Müzikler</p>
-                <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
-                  <a href="https://www.youtube.com/watch?v=jfKfPfyJRdk" target="_blank" rel="noreferrer" style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontSize: "12px", textDecoration: "none", fontWeight: 500 }}>
-                    🎵 Lo-Fi Hip Hop
-                  </a>
-                  <a href="https://www.youtube.com/watch?v=5qap5aO4i9A" target="_blank" rel="noreferrer" style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontSize: "12px", textDecoration: "none", fontWeight: 500 }}>
-                    🌧️ Yağmur Sesi
-                  </a>
-                  <a href="https://www.youtube.com/watch?v=77Zzx3wESrw" target="_blank" rel="noreferrer" style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontSize: "12px", textDecoration: "none", fontWeight: 500 }}>
-                    📚 Kütüphane Atmosferi
-                  </a>
-                </div>
-              </div>
-
               {/* GÜNLÜK ÇALIŞMA NOTU */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "24px" }}>
                 <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 10px", color: textMuted }}>📝 Bugünün Notu / Hedef Özeti</p>
@@ -971,11 +1016,12 @@
           )}
 
 
-          {/* 2. İSTATİSTİKLER SEKMESİ */}
+          {/* 2. İSTATİSTİKLER SEKMESİ (DETAYLI HAFTALIK / AYLIK RAPOR) */}
           {activeTab === "istatistik" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 16px", fontWeight: 600 }}>📊 Haftalık Performans Çubuk Grafiği</p>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 6px", fontWeight: 600 }}>📊 DETAYLI HAFTALIK RAPOR</p>
+                <p style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 16px", color: "#38BDF8" }}>Toplam Çalışma: {formatMinutes(weekMinutes)}</p>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "140px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}` }}>
                   {weekData.map((d, i) => {
                     const heightPct = Math.max(8, Math.round((d.dakika / maxWeekMin) * 100));
@@ -1018,7 +1064,7 @@
           )}
 
 
-          {/* 3. KONULAR SEKMESİ */}
+          {/* 3. KONULAR SEKMESİ (FLASHCARD & YANLIŞ NOTLARI) */}
           {activeTab === "konular" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
@@ -1032,7 +1078,32 @@
                 </div>
               </div>
 
-              {/* HIZLI YANLIŞ / TEKRAR NOTU EKLEME */}
+              {/* FLASHCARD (HIZLI KART) TEKRAR MODU */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 10px", color: "#38BDF8" }}>🃏 Hızlı Bilgi Kartları (Flashcard)</p>
+                <form onSubmit={handleAddFlashcard} style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
+                  <input placeholder="Ön Yüz (Soru / Terim, örn. İdatî nedir?)" value={fcFront} onChange={(e) => setFcFront(e.target.value)} style={{ padding: "10px 12px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                  <input placeholder="Arka Yüz (Cevap / Tanım, örn. Osmanlı lisesi)" value={fcBack} onChange={(e) => setFcBack(e.target.value)} style={{ padding: "10px 12px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                  <button type="submit" style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "10px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>Kart Ekle</button>
+                </form>
+
+                {flashcards.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "220px", overflowY: "auto" }}>
+                    {flashcards.map(c => {
+                      const isFlipped = flippedCardId === c.id;
+                      return (
+                        <div key={c.id} onClick={() => setFlippedCardId(isFlipped ? null : c.id)} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "14px", cursor: "pointer", position: "relative" }}>
+                          <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 4px" }}>{isFlipped ? "🟢 Cevap (Gizlemek için tıkla):" : "🔵 Soru (Cevap için tıkla):"}</p>
+                          <p style={{ fontSize: "14px", fontWeight: 600, margin: 0, color: isFlipped ? "#38BDF8" : colorMain }}>{isFlipped ? c.back : c.front}</p>
+                          <button onClick={(e) => { e.stopPropagation(); deleteFlashcard(c.id); }} style={{ position: "absolute", top: "10px", right: "12px", background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* HIZLI YANLIŞ / TEKRAR NOTU */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 10px" }}>📌 {activeTopicSubj} - Yanlış / Tekrar Notu Ekle</p>
                 <form onSubmit={handleAddWrongNote} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -1122,9 +1193,15 @@
           )}
 
 
-          {/* 4. DENEMELER SEKMESİ */}
+          {/* 4. DENEMELER SEKMESİ (AKILLI ZAYIF DERS ANALİZİ İLE) */}
           {activeTab === "denemeler" && (
             <div>
+              {/* AKILLI ANALİZ KUTUSU */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 4px", color: "#38BDF8" }}>🧠 Yapay Koç Deneme Analizi</p>
+                <p style={{ fontSize: "13px", margin: 0, color: colorMain }}>{weakSubjectAnalysis}</p>
+              </div>
+
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "20px", marginBottom: "20px", textAlign: "center" }}>
                 <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 6px", fontWeight: 700, letterSpacing: "1px" }}>⏳ ÖSYM SINAV SALONU SÜREÇ YÖNETİMİ</p>
                 
