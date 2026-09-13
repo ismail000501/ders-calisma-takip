@@ -105,6 +105,8 @@
       const [exams, setExams] = useState([]);
       const [topics, setTopics] = useState({});
       const [topicMinutes, setTopicMinutes] = useState({});
+      const [dailyNotes, setDailyNotes] = useState({}); // { "YYYY-MM-DD": "not metni" }
+      const [wrongNotes, setWrongNotes] = useState([]); // [{ id, text, subject }]
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
@@ -145,11 +147,10 @@
       const examRemainingAtPauseRef = useRef(135 * 60);
       const examTickRef = useRef(null);
 
-      // KPSS Sınavına Kalan Gün Hesaplama (Örn: 2026 Ön Lisans veya Ortaöğretim / Gelecek Hedef)
+      // KPSS Sınavına Kalan Gün Hesaplama
       const [kpssDaysLeft, setKpssDaysLeft] = useState(0);
 
       useEffect(() => {
-        // Hedef ÖSYM Sınav Tarihi (Örn: 2026 KPSS Ön Lisans: 4 Ekim 2026 veya Ortaöğretim: 25 Ekim 2026)
         const targetDate = new Date("2026-10-04T10:15:00");
         const updateKpssTimer = () => {
           const now = new Date();
@@ -177,6 +178,11 @@
       const [examNetSos, setExamNetSos] = useState("");
       const [examNetFen, setExamNetFen] = useState("");
 
+      // Yeni eklenen Not state'leri
+      const [currentNoteText, setCurrentNoteText] = useState("");
+      const [newWrongText, setNewWrongText] = useState("");
+      const [newWrongSubj, setNewWrongSubj] = useState("Türkçe");
+
       useEffect(() => {
         (async () => {
           try {
@@ -194,6 +200,14 @@
           try {
             const tm = localStorage.getItem("study-topic-mins-v1");
             if (tm) setTopicMinutes(JSON.parse(tm));
+          } catch (e) {}
+          try {
+            const dn = localStorage.getItem("study-daily-notes-v1");
+            if (dn) setDailyNotes(JSON.parse(dn));
+          } catch (e) {}
+          try {
+            const wn = localStorage.getItem("study-wrong-notes-v1");
+            if (wn) setWrongNotes(JSON.parse(wn));
           } catch (e) {}
           try {
             const tp = localStorage.getItem("study-topics-v3");
@@ -223,6 +237,14 @@
           setLoaded(true);
         })();
       }, []);
+
+      const today = isoDay(new Date());
+
+      useEffect(() => {
+        if (dailyNotes[today] !== undefined) {
+          setCurrentNoteText(dailyNotes[today] || "");
+        }
+      }, [dailyNotes, today]);
 
       useEffect(() => {
         if (subject.trim()) {
@@ -259,6 +281,29 @@
         setTopicMinutes(next);
         try { localStorage.setItem("study-topic-mins-v1", JSON.stringify(next)); } catch (e) {}
       }, []);
+
+      const handleSaveNote = () => {
+        const nextNotes = { ...dailyNotes, [today]: currentNoteText };
+        setDailyNotes(nextNotes);
+        try { localStorage.setItem("study-daily-notes-v1", JSON.stringify(nextNotes)); } catch (e) {}
+        alert("Günlük not kaydedildi!");
+      };
+
+      const handleAddWrongNote = (e) => {
+        e.preventDefault();
+        if (!newWrongText.trim()) return;
+        const item = { id: Date.now(), text: newWrongText.trim(), subject: newWrongSubj };
+        const nextList = [item, ...wrongNotes];
+        setWrongNotes(nextList);
+        try { localStorage.setItem("study-wrong-notes-v1", JSON.stringify(nextList)); } catch (e) {}
+        setNewWrongText("");
+      };
+
+      const deleteWrongNote = (id) => {
+        const nextList = wrongNotes.filter(w => w.id !== id);
+        setWrongNotes(nextList);
+        try { localStorage.setItem("study-wrong-notes-v1", JSON.stringify(nextList)); } catch (e) {}
+      };
 
       const updateTopicMinutesValue = (topicKey, value) => {
         const mins = Math.max(0, Number(value) || 0);
@@ -507,7 +552,7 @@
       };
 
       const exportData = () => {
-        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs };
+        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -528,6 +573,8 @@
             if (data.exams) saveExams(data.exams);
             if (data.topics) saveTopics(data.topics);
             if (data.topicMinutes) saveTopicMinutes(data.topicMinutes);
+            if (data.dailyNotes) setDailyNotes(data.dailyNotes);
+            if (data.wrongNotes) setWrongNotes(data.wrongNotes);
             if (data.targetStudyMins) updateTargetMins(data.targetStudyMins);
             if (data.targetParagraphs) updateTargetParagraphs(data.targetParagraphs);
             alert("Yedek başarıyla yüklendi!");
@@ -539,7 +586,6 @@
         setMenuOpen(false);
       };
 
-      const today = isoDay(new Date());
       const todaySessions = sessions.filter((s) => s.date === today);
       
       const todayMinutes = todaySessions.filter(s => s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
@@ -557,7 +603,6 @@
           if (hasStudied) {
             streak++;
           } else if (i > 0) {
-            // Bugün henüz çalışmadıysa dünden saymaya devam etsin diye ilk gün hariç kırılır
             break;
           }
           dateObj.setDate(dateObj.getDate() - 1);
@@ -637,7 +682,7 @@
           position: "relative"
         }}>
           
-          {/* ÜST BİLGİ BANDI: KPSS SINAV SAYACI & ÇALIŞMA SERİSİ (STREAK) */}
+          {/* ÜST BİLGİ BANDI: KPSS SINAV SAYACI & ÇALIŞMA SERİSİ */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" }}>
             <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", textAlign: "center" }}>
               <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 2px", fontWeight: 600 }}>⏳ KPSS'YE KALAN</p>
@@ -649,7 +694,7 @@
             </div>
           </div>
 
-          {/* SAĞ ÜST HAMBURGER MENÜ (3 ÇİZGİ) */}
+          {/* SAĞ ÜST HAMBURGER MENÜ */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px", position: "relative" }}>
             <button 
               onClick={() => setMenuOpen(!menuOpen)} 
@@ -833,6 +878,21 @@
                 </div>
               )}
 
+              {/* GÜNLÜK ÇALIŞMA NOTU */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "24px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 10px", color: textMuted }}>📝 Bugünün Notu / Hedef Özeti</p>
+                <textarea 
+                  rows="3" 
+                  placeholder="Bugün neler yaptık? Yarın hangi konulara ağırlık vereceğiz?" 
+                  value={currentNoteText} 
+                  onChange={(e) => setCurrentNoteText(e.target.value)}
+                  style={{ width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px", fontSize: "13px", resize: "vertical", marginBottom: "10px" }}
+                />
+                <button onClick={handleSaveNote} style={{ background: "#38BDF8", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "8px 16px", fontWeight: 600, cursor: "pointer", fontSize: "12px" }}>
+                  Notu Kaydet
+                </button>
+              </div>
+
               {/* ÖZET KARTLARI */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
                 <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px" }}>
@@ -925,7 +985,7 @@
           )}
 
 
-          {/* 3. KONULAR SEKMESİ */}
+          {/* 3. KONULAR SEKMESİ (YANLIŞ / TEKRAR NOTLARI İLE BİRLEŞTİRİLDİ) */}
           {activeTab === "konular" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
@@ -937,6 +997,35 @@
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* HIZLI YANLIŞ / TEKRAR NOTU EKLEME */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 10px" }}>📌 {activeTopicSubj} - Yanlış / Tekrar Notu Ekle</p>
+                <form onSubmit={handleAddWrongNote} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <input type="hidden" value={newWrongSubj = activeTopicSubj} />
+                  <textarea 
+                    rows="2" 
+                    placeholder="Unutulmaması gereken formül, kural veya yanlış yapılan soru detayı..." 
+                    value={newWrongText} 
+                    onChange={(e) => setNewWrongText(e.target.value)}
+                    style={{ width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px", fontSize: "13px", resize: "vertical" }}
+                  />
+                  <button type="submit" style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "10px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
+                    Notu / Yanlışı Kaydet
+                  </button>
+                </form>
+
+                {wrongNotes.filter(w => w.subject === activeTopicSubj).length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
+                    {wrongNotes.filter(w => w.subject === activeTopicSubj).map(w => (
+                      <div key={w.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, fontSize: "13px" }}>
+                        <span>💡 {w.text}</span>
+                        <button onClick={() => deleteWrongNote(w.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
