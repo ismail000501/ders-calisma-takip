@@ -16,7 +16,8 @@
       margin: 0;
       padding: 0;
       width: 100%;
-      min-height: 100vh;
+      height: 100%;
+      overflow-x: hidden; /* Sağa sola kaymayı kesin olarak engeller */
       font-family: 'Inter', sans-serif;
       touch-action: manipulation;
       -webkit-text-size-adjust: 100%;
@@ -98,31 +99,30 @@
 
     const DEFAULT_SUBJECTS = Object.keys(KPSS_TOPICS_DEFAULT);
 
-    const KPSS_ROTATING_MODULES = [
+    const KPSS_ROTATING_BLOCKS = [
       {
-        subject: "Türkçe (Paragraf & Sözel Mantık)",
-        strategy: "Her gün düzenli 30-40 paragraf çözmek hız kazandırır. Sözel mantık sorularında öncülleri tabloya net dökmek hatayı %90 önler.",
-        archiveInfo: "ÖSYM son yıllarda paragraf sorularını uzatmakta ve çeldiricileri güçlendirmektedir. Çıkmış sorularda 'çıkarılamaz' ve 'değinilmemiştir' kalıpları en sık sorulan tiplerdir."
+        blockName: "Grup 1: Temel Yetenek & Sözel Güç",
+        items: [
+          { name: "Türkçe (Paragraf)", tip: "Her gün düzenli 30-40 paragraf çözmek hız kazandırır.", archive: "ÖSYM son yıllarda uzun ve çeldiricisi yüksek paragraf sorularını tercih ediyor." },
+          { name: "Matematik (Problemler)", tip: "Sınavın kaderini problemler belirler. Sayı ve kesir problemleri önceliklidir.", archive: "Çıkmış sorularda her yıl ortalama 7-8 adet problem sorusu yer almaktadır." },
+          { name: "Tarih (İslamiyet Öncesi & İlk Türk-İslam)", tip: "Kökleri anlamak Osmanlı'yı kavramayı kolaylaştırır.", archive: "Kültür ve Medeniyet kısmından her yıl net 3-4 soru banko gelmektedir." }
+        ]
       },
       {
-        subject: "Matematik (Temel İşlemler & Problemler)",
-        strategy: "Sınavın kaderini problemler belirler. İşçi-havuz ve yüzde problemleri yerine sayı ve kesir problemlerine ağırlık ver.",
-        archiveInfo: "Çıkmış sorular incelendiğinde ÖSYM her yıl mutlaka 1 adet köklü-üslü sayı, 2 adet sayı basamakları ve 7-8 adet problem sorusuna yer vermektedir."
+        blockName: "Grup 2: Analitik & Tarihsel Süreç",
+        items: [
+          { name: "Matematik (Sayısal Mantık)", tip: "Temel kavramlar ve eşitsizlikler netleri hızla yukarı taşır.", archive: "ÖSYM her yıl en az 2 adet sayı basamakları sorusu sormaktadır." },
+          { name: "Tarih (Osmanlı Kültür & Medeniyet)", tip: "Divan teşkilatı ve toprak sistemine ezberden ziyade mantıkla çalış.", archive: "Osmanlı'nın idari yapısı çıkmış soruların favori konusudur." },
+          { name: "Coğrafya (Fiziki Yapı)", tip: "Türkiye'nin dağları, akarsuları ve iklimi harita üzerinde çalışılmalıdır.", archive: "Dağların uzanış yönü ve iklim tipleri sıklıkla sorulur." }
+        ]
       },
       {
-        subject: "Tarih (İnkılaplar & Osmanlı Kültür Medeniyet)",
-        strategy: "Tarih dersinde kronoloji her şeydir. Olayların ardışıklığını kavradığında ezber yapmana gerek kalmaz.",
-        archiveInfo: "ÖSYM Kültür ve Medeniyet kısmından her yıl net 3-4 soru sormaktadır (Divan üyesi, toprak sistemi, sanat vb.). Atatürk dönemi dış politika ise banko sorudur."
-      },
-      {
-        subject: "Coğrafya (Türkiye Beşeri & Fiziki Coğrafya)",
-        strategy: "Harita üzerinden çalışmak coğrafyada netleri ikiye katlar. Dağların uzanış yönü iklimi doğrudan etkiler.",
-        archiveInfo: "Çıkmış sorularda Türkiye'nin madenleri, enerji kaynakları ve tarım ürünlerinin coğrafi dağılımı ÖSYM'nin vazgeçilmez soru havuzunu oluşturur."
-      },
-      {
-        subject: "Vatandaşlık (1982 Anayasası & İdare)",
-        strategy: "Anayasa metinleri ağır gelebilir; maddeleri kendi cümlelerinle özetleyerek küçük not kartları oluştur.",
-        archiveInfo: "Yasama, Yürürlük ve Yargı organlarının görevleri ile temel hak ve hürriyetler çıkmış soruların %70'ini oluşturmaktadır."
+        blockName: "Grup 3: İnkılaplar & Mevzuat",
+        items: [
+          { name: "Tarih (İnkılap Tarihi & Atatürk Dönemi)", tip: "Kurtuluş Savaşı cepheleri ve ilkeler kronolojik olarak ezberlenmelidir.", archive: "Atatürk dönemi dış politika ve inkılaplar sınavın en ağır kısmıdır." },
+          { name: "Coğrafya (Beşeri & Ekonomik)", tip: "Türkiye'nin madenleri, enerji kaynakları ve tarım ürünleri ezber gerektirir.", archive: "Bölgesel kalkınma projeleri son yıllarda sıkça sorulmaktadır." },
+          { name: "Vatandaşlık (1982 Anayasası Temelleri)", tip: "Anayasa maddelerini özetleyerek küçük not kartları çıkar.", archive: "Yasama, Yürütme ve Yargı organları soruların %70'ini oluşturur." }
+        ]
       }
     ];
 
@@ -161,18 +161,32 @@
       const [settingsModalOpen, setSettingsModalOpen] = useState(false);
       const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
 
-      // 2 Saatte bir güncellenen rotasyon indeksi
-      const [rotatingIndex, setRotatingIndex] = useState(0);
+      const [blockIndex, setBlockIndex] = useState(0);
+      const [blockSecondsLeft, setBlockSecondsLeft] = useState(7200);
 
       useEffect(() => {
-        const calculateRotatingIndex = () => {
-          const nowHour = new Date().getHours();
-          const index = Math.floor(nowHour / 2) % KPSS_ROTATING_MODULES.length;
-          setRotatingIndex(index);
+        const updateBlockAndTimer = () => {
+          const now = new Date();
+          const totalSecsToday = (now.getHours() * 3600) + (now.getMinutes() * 60) + now.getSeconds();
+          const currentBlock = Math.floor((totalSecsToday % 21600) / 7200);
+          setBlockIndex(currentBlock % KPSS_ROTATING_BLOCKS.length);
+          
+          const secsIntoCurrentBlock = totalSecsToday % 7200;
+          setBlockSecondsLeft(7200 - secsIntoCurrentBlock);
         };
-        calculateRotatingIndex();
-        const interval = setInterval(calculateRotatingIndex, 60000); // Her dakika kontrol et
-        return () => clearInterval(interval);
+
+        updateBlockAndTimer();
+        const timerInterval = setInterval(() => {
+          setBlockSecondsLeft((prev) => {
+            if (prev <= 1) {
+              updateBlockAndTimer();
+              return 7200;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        return () => clearInterval(timerInterval);
       }, []);
 
       const [fcFront, setFcFront] = useState("");
@@ -230,7 +244,6 @@
       const [targetParagraphs, setTargetParagraphs] = useState(50);
 
       const [activeTopicSubj, setActiveTopicSubj] = useState("Türkçe");
-      const [newTopicName, setNewTopicName] = useState("");
       const [examName, setExamName] = useState("");
       const [examNetTr, setExamNetTr] = useState("");
       const [examNetMat, setExamNetMat] = useState("");
@@ -438,35 +451,6 @@
         return () => { if (pTickRef.current) clearInterval(pTickRef.current); };
       }, [pIsRunning]);
 
-      useEffect(() => {
-        if (isExamRunning) {
-          examEndTimeRef.current = Date.now() + (examRemainingAtPauseRef.current * 1000);
-          examTickRef.current = setInterval(() => {
-            const now = Date.now();
-            const leftSecs = Math.ceil((examEndTimeRef.current - now) / 1000);
-            if (leftSecs <= 0) {
-              setIsExamRunning(false);
-              setExamSecondsLeft(0);
-              examRemainingAtPauseRef.current = 0;
-              alert("SÜRE BİTTİ! ÖSYM sınav salonu kapandı!");
-            } else {
-              setExamSecondsLeft(leftSecs);
-            }
-          }, 200);
-        } else {
-          if (examTickRef.current) clearInterval(examTickRef.current);
-          examRemainingAtPauseRef.current = examSecondsLeft;
-        }
-        return () => { if (examTickRef.current) clearInterval(examTickRef.current); };
-      }, [isExamRunning]);
-
-      const selectExamDuration = (mins) => {
-        setIsExamRunning(false);
-        setExamDurationMins(mins);
-        setExamSecondsLeft(mins * 60);
-        examRemainingAtPauseRef.current = mins * 60;
-      };
-
       const handleStartPause = () => {
         if (!isRunning && !subject.trim()) return;
         setIsRunning((r) => !r);
@@ -654,7 +638,7 @@
 
       if (!loaded) return null;
 
-      const activeRotatingMod = KPSS_ROTATING_MODULES[rotatingIndex];
+      const activeBlock = KPSS_ROTATING_BLOCKS[blockIndex];
 
       return (
         <div style={{ 
@@ -663,11 +647,12 @@
           color: colorMain, 
           minHeight: "100vh",
           width: "100%",
-          padding: "24px 16px 110px", 
           maxWidth: "680px", 
           margin: "0 auto", 
+          padding: "24px 16px 110px", 
           boxSizing: "border-box",
-          position: "relative"
+          position: "relative",
+          overflowX: "hidden"
         }}>
           
           {/* PROFESYONEL ÜST HEADER & SEVİYE KARTI */}
@@ -915,10 +900,9 @@
             </div>
           )}
 
-          {/* 2. KPSS MERKEZİ SEKMESİ (2 SAATTE BİR DİNAMİK GÜNCELLENEN STRATEJİ & ÇIKMIŞ SORU ANALİZİ) */}
+          {/* 2. KPSS MERKEZİ SEKMESİ */}
           {activeTab === "kpss" && (
             <div>
-              {/* Kalan Gün & Strateji Kartı */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "22px", marginBottom: "16px", boxShadow: "0 8px 25px rgba(0,0,0,0.15)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <div>
@@ -927,28 +911,39 @@
                   </div>
                   <span style={{ background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", padding: "6px 12px", borderRadius: "12px", fontSize: "12px", fontWeight: 800 }}>04 Ekim 2026</span>
                 </div>
-                <p style={{ fontSize: "13px", color: textMuted, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
-                  💡 <strong style={{ color: colorMain }}>Profesyonel Strateji:</strong> Aşağıdaki analiz her 2 saatte bir aktif ders konusuna göre otomatik güncellenir.
-                </p>
-              </div>
-
-              {/* 2 Saatlik Otomatik Güncellenen Dinamik Katsayı & Strateji Analizi */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px", borderLeft: "4px solid #38BDF8" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <p style={{ fontSize: "14px", fontWeight: 800, margin: 0, color: "#38BDF8" }}>🔄 Canlı Katsayı & Odak Analizi</p>
-                  <span style={{ fontSize: "10px", background: bgInner, color: textMuted, padding: "4px 8px", borderRadius: "8px", fontWeight: 700 }}>2 Saatte Bir Yenilenir</span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: bgInner, padding: "10px 14px", borderRadius: "12px", border: `1px solid ${borderCard}` }}>
+                  <span style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>🔄 Blok Değişimine Kalan Süre:</span>
+                  <span style={{ fontSize: "14px", fontWeight: 800, color: "#38BDF8", fontFamily: "monospace" }}>{formatClock(blockSecondsLeft)}</span>
                 </div>
-                <p style={{ fontSize: "15px", fontWeight: 800, margin: "0 0 8px", color: colorMain }}>{activeRotatingMod.subject}</p>
-                <p style={{ fontSize: "13px", color: textMuted, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>{activeRotatingMod.strategy}</p>
               </div>
 
-              {/* Eş Zamanlı Çıkmış Soru Analizi Bilgi Kutusu */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px", borderLeft: "4px solid #38BDF8" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <p style={{ fontSize: "14px", fontWeight: 800, margin: 0, color: "#38BDF8" }}>📊 Canlı Katsayı & Strateji Analizi</p>
+                  <span style={{ fontSize: "10px", background: bgInner, color: textMuted, padding: "4px 8px", borderRadius: "8px", fontWeight: 700 }}>{activeBlock.blockName}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {activeBlock.items.map((item, idx) => (
+                    <div key={idx} style={{ background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
+                      <p style={{ fontSize: "13px", fontWeight: 800, margin: "0 0 4px", color: colorMain }}>{item.name}</p>
+                      <p style={{ fontSize: "11px", color: textMuted, margin: 0, fontWeight: 600 }}>{item.tip}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px", borderLeft: "4px solid #2DD4BF" }}>
-                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 8px", color: "#2DD4BF" }}>📈 ÖSYM Çıkmış Soru Analizi (Eş Zamanlı)</p>
-                <p style={{ fontSize: "13px", color: textMuted, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>{activeRotatingMod.archiveInfo}</p>
+                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 12px", color: "#2DD4BF" }}>📈 ÖSYM Çıkmış Soru Analizi (Eş Zamanlı)</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {activeBlock.items.map((item, idx) => (
+                    <div key={idx} style={{ background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
+                      <p style={{ fontSize: "13px", fontWeight: 800, margin: "0 0 4px", color: colorMain }}>{item.name}</p>
+                      <p style={{ fontSize: "11px", color: textMuted, margin: 0, fontWeight: 600 }}>{item.archive}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* ÖSYM Çıkmış Soru Arşivi Takip Modülü */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 4px", color: "#38BDF8" }}>📂 Çıkmış Soru Yılları Arşivi (2018 - 2025)</p>
                 <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 14px", fontWeight: 600 }}>Çözdüğün çıkmış soru yıllarını işaretle ve ilerlemeni takip et:</p>
