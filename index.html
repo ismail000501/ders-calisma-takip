@@ -115,7 +115,7 @@
       const [topicMinutes, setTopicMinutes] = useState({});
       const [dailyNotes, setDailyNotes] = useState({});
       const [wrongNotes, setWrongNotes] = useState([]);
-      const [flashcards, setFlashcards] = useState([]); // [{id, front, back}]
+      const [flashcards, setFlashcards] = useState([]);
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
@@ -273,6 +273,33 @@
           }
         }
       }, [subject]);
+
+      // Renk Paletleri (Dark, OLED Saf Siyah, Light)
+      let bgMain = "#0B0F19", colorMain = "#E2E8F0", bgCard = "#131B2E", borderCard = "#1E293B", textMuted = "#94A3B8", bgInner = "#0B0F19";
+      if (theme === "oled") {
+        bgMain = "#000000";
+        colorMain = "#FFFFFF";
+        bgCard = "#0A0A0A";
+        borderCard = "#222222";
+        textMuted = "#A3A3A3";
+        bgInner = "#000000";
+      } else if (theme === "light") {
+        bgMain = "#F8FAFC";
+        colorMain = "#1E293B";
+        bgCard = "#FFFFFF";
+        borderCard = "#E2E8F0";
+        textMuted = "#64748B";
+        bgInner = "#F1F5F9";
+      }
+
+      // Üst tarayıcı durum çubuğu rengini (theme-color) dinamik olarak güncelle
+      useEffect(() => {
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+          metaThemeColor.setAttribute("content", bgMain);
+        }
+        document.body.style.backgroundColor = bgMain;
+      }, [bgMain]);
 
       const cycleTheme = () => {
         let next = "dark";
@@ -719,24 +746,6 @@
       const isExamCritical = examSecondsLeft <= 300 && examSecondsLeft > 0;
       const examClockColor = isExamCritical ? "#F43F5E" : "#F59E0B";
 
-      // Renk Paletleri (Dark, OLED Saf Siyah, Light)
-      let bgMain = "#0B0F19", colorMain = "#E2E8F0", bgCard = "#131B2E", borderCard = "#1E293B", textMuted = "#94A3B8", bgInner = "#0B0F19";
-      if (theme === "oled") {
-        bgMain = "#000000";
-        colorMain = "#FFFFFF";
-        bgCard = "#0A0A0A";
-        borderCard = "#222222";
-        textMuted = "#A3A3A3";
-        bgInner = "#000000";
-      } else if (theme === "light") {
-        bgMain = "#F8FAFC";
-        colorMain = "#1E293B";
-        bgCard = "#FFFFFF";
-        borderCard = "#E2E8F0";
-        textMuted = "#64748B";
-        bgInner = "#F1F5F9";
-      }
-
       if (!loaded) return null;
 
       return (
@@ -1016,7 +1025,7 @@
           )}
 
 
-          {/* 2. İSTATİSTİKLER SEKMESİ (DETAYLI HAFTALIK / AYLIK RAPOR) */}
+          {/* 2. İSTATİSTİKLER SEKMESİ */}
           {activeTab === "istatistik" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
@@ -1064,7 +1073,7 @@
           )}
 
 
-          {/* 3. KONULAR SEKMESİ (FLASHCARD & YANLIŞ NOTLARI) */}
+          {/* 3. KONULAR SEKMESİ */}
           {activeTab === "konular" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
@@ -1193,7 +1202,7 @@
           )}
 
 
-          {/* 4. DENEMELER SEKMESİ (AKILLI ZAYIF DERS ANALİZİ İLE) */}
+          {/* 4. DENEMELER SEKMESİ */}
           {activeTab === "denemeler" && (
             <div>
               {/* AKILLI ANALİZ KUTUSU */}
