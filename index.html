@@ -5,19 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0B0F19">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Ders Çalışma Takip</title>
+  <title>Ders Çalışma Takip - ÖSYM Pro</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       min-height: 100vh;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       touch-action: manipulation;
       -webkit-text-size-adjust: 100%;
     }
@@ -28,6 +28,14 @@
     }
     .exam-danger {
       animation: pulseAlert 1s infinite;
+    }
+    @keyframes floatTree {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+      100% { transform: translateY(0px); }
+    }
+    .tree-animate {
+      animation: floatTree 3s ease-in-out infinite;
     }
   </style>
 </head>
@@ -108,7 +116,7 @@
 
     function StudyTracker() {
       const [loaded, setLoaded] = useState(false);
-      const [theme, setTheme] = useState("dark"); // "dark" | "light" | "oled"
+      const [theme, setTheme] = useState("dark"); // "dark" | "oled" | "light"
       const [sessions, setSessions] = useState([]);
       const [exams, setExams] = useState([]);
       const [topics, setTopics] = useState({});
@@ -116,6 +124,7 @@
       const [dailyNotes, setDailyNotes] = useState({});
       const [wrongNotes, setWrongNotes] = useState([]);
       const [flashcards, setFlashcards] = useState([]);
+      const [forestCount, setForestCount] = useState(0); // Toplam dikilen odak ağacı
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
@@ -123,7 +132,7 @@
       const [menuOpen, setMenuOpen] = useState(false);
       const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
 
-      // Flashcard Ekleme State'leri
+      // Flashcard State'leri
       const [fcFront, setFcFront] = useState("");
       const [fcBack, setFcBack] = useState("");
       const [flippedCardId, setFlippedCardId] = useState(null);
@@ -229,6 +238,10 @@
             if (fc) setFlashcards(JSON.parse(fc));
           } catch (e) {}
           try {
+            const fcCount = localStorage.getItem("study-forest-count-v1");
+            if (fcCount) setForestCount(Number(fcCount));
+          } catch (e) {}
+          try {
             const tp = localStorage.getItem("study-topics-v3");
             if (tp) {
               setTopics(JSON.parse(tp));
@@ -274,30 +287,29 @@
         }
       }, [subject]);
 
-      // Renk Paletleri (Dark, OLED Saf Siyah, Light)
-      let bgMain = "#0B0F19", colorMain = "#E2E8F0", bgCard = "#131B2E", borderCard = "#1E293B", textMuted = "#94A3B8", bgInner = "#0B0F19";
+      // Renk Paletleri (Ultra Modern Dark, OLED Saf Siyah, Soft Light)
+      let bgMain = "#090D16", colorMain = "#F1F5F9", bgCard = "#111827", borderCard = "#1F2937", textMuted = "#9CA3AF", bgInner = "#0D1322", accentGlow = "rgba(56, 189, 248, 0.15)";
       if (theme === "oled") {
         bgMain = "#000000";
         colorMain = "#FFFFFF";
-        bgCard = "#0A0A0A";
-        borderCard = "#222222";
+        bgCard = "#080808";
+        borderCard = "#1C1C1C";
         textMuted = "#A3A3A3";
         bgInner = "#000000";
+        accentGlow = "rgba(45, 212, 191, 0.15)";
       } else if (theme === "light") {
-        bgMain = "#F8FAFC";
-        colorMain = "#1E293B";
+        bgMain = "#F4F6F9";
+        colorMain = "#0F172A";
         bgCard = "#FFFFFF";
         borderCard = "#E2E8F0";
         textMuted = "#64748B";
-        bgInner = "#F1F5F9";
+        bgInner = "#F8FAFC";
+        accentGlow = "rgba(14, 165, 233, 0.1);";
       }
 
-      // Üst tarayıcı durum çubuğu rengini (theme-color) dinamik olarak güncelle
       useEffect(() => {
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) {
-          metaThemeColor.setAttribute("content", bgMain);
-        }
+        if (metaThemeColor) metaThemeColor.setAttribute("content", bgMain);
         document.body.style.backgroundColor = bgMain;
       }, [bgMain]);
 
@@ -416,7 +428,11 @@
               setIsPomoRunning(false);
               setPomoSecondsLeft(0);
               pomoRemainingAtPauseRef.current = 0;
-              alert("Pomodoro süresi bitti! Harika iş çıkardın.");
+              // Ağaç kazanma
+              const newForest = forestCount + 1;
+              setForestCount(newForest);
+              try { localStorage.setItem("study-forest-count-v1", String(newForest)); } catch (e) {}
+              alert("🎉 Pomodoro bitti! Ormanına 1 yeni odak ağacı eklendi!");
             } else {
               setPomoSecondsLeft(leftSecs);
             }
@@ -426,9 +442,9 @@
           pomoRemainingAtPauseRef.current = pomoSecondsLeft;
         }
         return () => { if (pomoTickRef.current) clearInterval(pomoTickRef.current); };
-      }, [isPomoRunning]);
+      }, [isPomoRunning, forestCount]);
 
-      // 3. Paragraf Kronometre (Arka planda asla şaşmaz)
+      // 3. Paragraf Kronometre
       useEffect(() => {
         if (pIsRunning) {
           pStartTimeRef.current = Date.now();
@@ -444,7 +460,7 @@
         return () => { if (pTickRef.current) clearInterval(pTickRef.current); };
       }, [pIsRunning]);
 
-      // 4. Deneme Geri Sayım Kronometresi (Arka planda asla şaşmaz)
+      // 4. Deneme Geri Sayım Kronometresi
       useEffect(() => {
         if (isExamRunning) {
           examEndTimeRef.current = Date.now() + (examRemainingAtPauseRef.current * 1000);
@@ -455,7 +471,7 @@
               setIsExamRunning(false);
               setExamSecondsLeft(0);
               examRemainingAtPauseRef.current = 0;
-              alert("SÜRE BİTTİ! ÖSYM sınav salonu kapandı, kağıtlar toplandı!");
+              alert("SÜRE BİTTİ! ÖSYM sınav salonu kapandı!");
             } else {
               setExamSecondsLeft(leftSecs);
             }
@@ -496,6 +512,14 @@
           date: isoDay(new Date()) 
         };
         saveSessions([session, ...sessions]);
+        
+        // Ağaç kazanma (her 30 dk çalışmaya 1 ağaç)
+        if (minutes >= 25) {
+          const newForest = forestCount + 1;
+          setForestCount(newForest);
+          try { localStorage.setItem("study-forest-count-v1", String(newForest)); } catch (e) {}
+        }
+
         setIsRunning(false);
         setElapsed(0);
         accumulatedTimeRef.current = 0;
@@ -532,14 +556,17 @@
           date: isoDay(new Date())
         };
         saveSessions([session, ...sessions]);
+        
+        const newForest = forestCount + 1;
+        setForestCount(newForest);
+        try { localStorage.setItem("study-forest-count-v1", String(newForest)); } catch (e) {}
+
         setIsPomoRunning(false);
         setPomoSecondsLeft(pomoMinutes * 60);
         pomoRemainingAtPauseRef.current = pomoMinutes * 60;
       };
 
-      const handlePStartPause = () => {
-        setPIsRunning((r) => !r);
-      };
+      const handlePStartPause = () => setPIsRunning((r) => !r);
 
       const handlePFinish = () => {
         if (pElapsed < 3 && pCount === 0) {
@@ -618,7 +645,7 @@
       };
 
       const exportData = () => {
-        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes, flashcards };
+        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes, flashcards, forestCount };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -642,6 +669,7 @@
             if (data.dailyNotes) setDailyNotes(data.dailyNotes);
             if (data.wrongNotes) setWrongNotes(data.wrongNotes);
             if (data.flashcards) setFlashcards(data.flashcards);
+            if (data.forestCount !== undefined) setForestCount(data.forestCount);
             if (data.targetStudyMins) updateTargetMins(data.targetStudyMins);
             if (data.targetParagraphs) updateTargetParagraphs(data.targetParagraphs);
             alert("Yedek başarıyla yüklendi!");
@@ -654,12 +682,21 @@
       };
 
       const todaySessions = sessions.filter((s) => s.date === today);
-      
       const todayMinutes = todaySessions.filter(s => s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
       const todayParagraphMinutes = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + s.minutes, 0);
       const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
 
-      // Çalışma Serisi (Streak) Hesaplama
+      // XP & Seviye Hesaplama (Her 1 dk = 10 XP, Her Soru = 5 XP, Her Ağaç = 50 XP)
+      const totalXp = useMemo(() => {
+        const totalMin = sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
+        const totalP = sessions.reduce((acc, s) => acc + (s.count || 0), 0);
+        return (totalMin * 10) + (totalP * 5) + (forestCount * 50);
+      }, [sessions, forestCount]);
+
+      const currentLevel = Math.floor(totalXp / 1000) + 1;
+      const xpProgress = totalXp % 1000;
+
+      // Çalışma Serisi (Streak)
       const streakCount = useMemo(() => {
         if (!sessions || sessions.length === 0) return 0;
         let streak = 0;
@@ -722,9 +759,8 @@
         return list.reduce((acc, t) => acc + (topicMinutes[`${activeTopicSubj}_${t.id}`] || 0), 0);
       }, [topics, topicMinutes, activeTopicSubj]);
 
-      // En çok yanlış yapılan veya düşük net çıkarılan ders analizi (Son 5 deneme ortalamasına göre)
       const weakSubjectAnalysis = useMemo(() => {
-        if (!exams || exams.length === 0) return "Henüz yeterli deneme verisi yok.";
+        if (!exams || exams.length === 0) return "Henüz yeterli deneme verisi yok. Deneme ekledikçe yapay koç analiz yapacak.";
         const recentExams = exams.slice(0, 5);
         let totalTr = 0, totalMat = 0, totalSos = 0, totalFen = 0;
         recentExams.forEach(ex => {
@@ -740,64 +776,84 @@
           { name: "Fen / Vatandaşlık", val: totalFen / recentExams.length }
         ];
         avgs.sort((a, b) => a.val - b.val);
-        return `Son denemelere göre en çok ağırlık vermen gereken ders: ${avgs[0].name} (Ortalama Net: ${avgs[0].val.toFixed(1)})`;
+        return `Son denemelere göre öncelik vermen gereken ders: ${avgs[0].name} (Ort. Net: ${avgs[0].val.toFixed(1)})`;
       }, [exams]);
 
       const isExamCritical = examSecondsLeft <= 300 && examSecondsLeft > 0;
-      const examClockColor = isExamCritical ? "#F43F5E" : "#F59E0B";
+      const examClockColor = isExamCritical ? "#EF4444" : "#F59E0B";
 
       if (!loaded) return null;
 
       return (
         <div style={{ 
-          fontFamily: "'Inter', sans-serif", 
+          fontFamily: "'Plus Jakarta Sans', sans-serif", 
           background: bgMain, 
           color: colorMain, 
           minHeight: "100vh",
           width: "100%",
-          padding: "20px 16px 90px", 
+          padding: "16px 14px 96px", 
           maxWidth: "720px", 
           margin: "0 auto", 
           boxSizing: "border-box",
           position: "relative"
         }}>
           
-          {/* ÜST BİLGİ BANDI: KPSS SINAV SAYACI & ÇALIŞMA SERİSİ */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
-            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", textAlign: "center" }}>
-              <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 2px", fontWeight: 600 }}>⏳ KPSS'YE KALAN</p>
-              <p style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#F59E0B" }}>{kpssDaysLeft} Gün</p>
+          {/* OYUNLAŞTIRMA SEVİYE & XP BANDI */}
+          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "14px 18px", marginBottom: "14px", boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ background: "linear-gradient(135deg, #38BDF8 0%, #2DD4BF 100%)", color: "#090D16", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase" }}>
+                  Seviye {currentLevel}
+                </span>
+                <span style={{ fontSize: "13px", fontWeight: 700 }}>ÖSYM Uzmanı</span>
+              </div>
+              <span style={{ fontSize: "12px", color: textMuted, fontWeight: 600 }}>{totalXp} XP</span>
             </div>
-            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", textAlign: "center" }}>
-              <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 2px", fontWeight: 600 }}>🔥 ÇALIŞMA SERİSİ</p>
-              <p style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#38BDF8" }}>{streakCount} Günlük Seri</p>
+            <div style={{ width: "100%", background: bgInner, height: "8px", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ width: `${(xpProgress / 1000) * 100}%`, background: "linear-gradient(90deg, #38BDF8, #2DD4BF)", height: "100%", transition: "width 0.4s ease" }}></div>
             </div>
           </div>
 
-          {/* MOTİVASYON SÖZÜ BANDI */}
-          <div onClick={() => setCurrentQuoteIndex((prev) => (prev + 1) % MOTIVATIONS.length)} style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "10px 14px", marginBottom: "16px", textAlign: "center", cursor: "pointer" }} title="Yeni söz için tıkla">
-            <p style={{ fontSize: "12px", color: "#38BDF8", margin: 0, fontStyle: "italic", fontWeight: 500 }}>
-              💡 "{MOTIVATIONS[currentQuoteIndex]}" <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "2px" }}>(Değiştirmek için tıkla)</span>
+          {/* ÜST BİLGİ KARTLARI: KPSS SAYAÇ, SERİ & ODAK ORMANI */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "12px" }}>
+            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "12px 8px", textAlign: "center" }}>
+              <p style={{ fontSize: "10px", color: textMuted, margin: "0 0 2px", fontWeight: 700 }}>⏳ KPSS</p>
+              <p style={{ fontSize: "15px", fontWeight: 800, margin: 0, color: "#F59E0B" }}>{kpssDaysLeft} Gün</p>
+            </div>
+            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "12px 8px", textAlign: "center" }}>
+              <p style={{ fontSize: "10px", color: textMuted, margin: "0 0 2px", fontWeight: 700 }}>🔥 SERİ</p>
+              <p style={{ fontSize: "15px", fontWeight: 800, margin: 0, color: "#38BDF8" }}>{streakCount} Gün</p>
+            </div>
+            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "12px 8px", textAlign: "center" }}>
+              <p style={{ fontSize: "10px", color: textMuted, margin: "0 0 2px", fontWeight: 700 }}>🌲 ORMAN</p>
+              <p style={{ fontSize: "15px", fontWeight: 800, margin: 0, color: "#2DD4BF" }}>{forestCount} Ağaç</p>
+            </div>
+          </div>
+
+          {/* MOTİVASYON KÖŞESİ */}
+          <div onClick={() => setCurrentQuoteIndex((prev) => (prev + 1) % MOTIVATIONS.length)} style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "12px 16px", marginBottom: "16px", textAlign: "center", cursor: "pointer" }}>
+            <p style={{ fontSize: "12px", color: "#38BDF8", margin: 0, fontStyle: "italic", fontWeight: 500, lineHeight: 1.4 }}>
+              💡 "{MOTIVATIONS[currentQuoteIndex]}" <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "3px" }}>(Değiştirmek için tıkla)</span>
             </p>
           </div>
 
           {/* SAĞ ÜST HAMBURGER MENÜ */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px", position: "relative" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px", position: "relative" }}>
             <button 
               onClick={() => setMenuOpen(!menuOpen)} 
               style={{ 
                 background: bgCard, 
                 color: colorMain, 
                 border: `1px solid ${borderCard}`, 
-                borderRadius: "10px", 
-                width: "44px", 
-                height: "44px", 
+                borderRadius: "12px", 
+                width: "42px", 
+                height: "42px", 
                 display: "flex", 
                 alignItems: "center", 
                 justifyContent: "center", 
                 cursor: "pointer",
-                fontSize: "20px",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.15)"
+                fontSize: "18px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
               }}
               title="Menü"
             >
@@ -807,25 +863,25 @@
             {menuOpen && (
               <div style={{ 
                 position: "absolute", 
-                top: "52px", 
+                top: "48px", 
                 right: 0, 
                 background: bgCard, 
                 border: `1px solid ${borderCard}`, 
-                borderRadius: "12px", 
-                boxShadow: "0 8px 20px rgba(0,0,0,0.3)", 
+                borderRadius: "14px", 
+                boxShadow: "0 10px 25px rgba(0,0,0,0.4)", 
                 zIndex: 2000, 
                 width: "190px", 
                 padding: "8px" 
               }}>
-                <button onClick={exportData} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}>
+                <button onClick={exportData} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
                   📥 Yedeği İndir
                 </button>
-                <label style={{ display: "block", width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}>
+                <label style={{ display: "block", width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
                   📤 Yükle
                   <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
                 </label>
                 <div style={{ height: "1px", background: borderCard, margin: "4px 0" }}></div>
-                <button onClick={cycleTheme} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}>
+                <button onClick={cycleTheme} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
                   🎨 Tema: {theme === "dark" ? "Karanlık" : theme === "oled" ? "OLED Siyah" : "Aydınlık"}
                 </button>
               </div>
@@ -836,15 +892,15 @@
           {/* 1. SAYAÇ SEKMESİ */}
           {activeTab === "sayac" && (
             <div>
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: textMuted }}>🎯 Günlük Hedefler ve İlerleme</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: textMuted }}>🎯 Günlük Hedefler</span>
                 </div>
 
                 <div style={{ marginBottom: "14px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
-                    <span>Çalışma: <strong>{todayMinutes} dk</strong> / <input type="number" value={targetStudyMins} onChange={(e) => updateTargetMins(Number(e.target.value))} style={{ width: "64px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "6px", padding: "4px", fontSize: "12px", textAlign: "center" }} /> dk</span>
-                    <span style={{ color: textMuted }}>%{Math.round((todayMinutes / targetStudyMins) * 100)}</span>
+                    <span>Çalışma: <strong>{todayMinutes} dk</strong> / <input type="number" value={targetStudyMins} onChange={(e) => updateTargetMins(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "6px", padding: "4px", fontSize: "12px", textAlign: "center", fontWeight: 700 }} /> dk</span>
+                    <span style={{ color: textMuted, fontWeight: 700 }}>%{Math.min(100, Math.round((todayMinutes / targetStudyMins) * 100))}</span>
                   </div>
                   <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
                     <div style={{ width: `${Math.min(100, (todayMinutes / targetStudyMins) * 100)}%`, background: "#38BDF8", height: "100%", transition: "width 0.3s ease" }}></div>
@@ -853,8 +909,8 @@
 
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
-                    <span>Paragraf: <strong>{todayParagraphCount} soru</strong> / <input type="number" value={targetParagraphs} onChange={(e) => updateTargetParagraphs(Number(e.target.value))} style={{ width: "64px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "6px", padding: "4px", fontSize: "12px", textAlign: "center" }} /> soru</span>
-                    <span style={{ color: textMuted }}>%{Math.round((todayParagraphCount / targetParagraphs) * 100)}</span>
+                    <span>Paragraf: <strong>{todayParagraphCount} soru</strong> / <input type="number" value={targetParagraphs} onChange={(e) => updateTargetParagraphs(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "6px", padding: "4px", fontSize: "12px", textAlign: "center", fontWeight: 700 }} /> soru</span>
+                    <span style={{ color: textMuted, fontWeight: 700 }}>%{Math.min(100, Math.round((todayParagraphCount / targetParagraphs) * 100)}</span>
                   </div>
                   <div style={{ width: "100%", background: bgInner, height: "10px", borderRadius: "5px", overflow: "hidden" }}>
                     <div style={{ width: `${Math.min(100, (todayParagraphCount / targetParagraphs) * 100)}%`, background: "#2DD4BF", height: "100%", transition: "width 0.3s ease" }}></div>
@@ -862,37 +918,37 @@
                 </div>
               </div>
 
-              {/* SAYAÇ İÇİNDEKİ KLASÖRLER */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "16px" }}>
-                <button onClick={() => setSayacFolder("kronometre")} style={{ background: sayacFolder === "kronometre" ? "#38BDF8" : bgCard, color: sayacFolder === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
-                  ⏱️ Ders Sayaç
+              {/* SAYAÇ MODU SEÇİCİ */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "14px" }}>
+                <button onClick={() => setSayacFolder("kronometre")} style={{ background: sayacFolder === "kronometre" ? "#38BDF8" : bgCard, color: sayacFolder === "kronometre" ? "#090D16" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px 6px", fontWeight: 700, cursor: "pointer", fontSize: "12px", textAlign: "center", boxShadow: sayacFolder === "kronometre" ? "0 4px 12px rgba(56, 189, 248, 0.3)" : "none" }}>
+                  ⏱️ Ders
                 </button>
-                <button onClick={() => setSayacFolder("pomodoro")} style={{ background: sayacFolder === "pomodoro" ? "#38BDF8" : bgCard, color: sayacFolder === "pomodoro" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
+                <button onClick={() => setSayacFolder("pomodoro")} style={{ background: sayacFolder === "pomodoro" ? "#38BDF8" : bgCard, color: sayacFolder === "pomodoro" ? "#090D16" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px 6px", fontWeight: 700, cursor: "pointer", fontSize: "12px", textAlign: "center", boxShadow: sayacFolder === "pomodoro" ? "0 4px 12px rgba(56, 189, 248, 0.3)" : "none" }}>
                   🍅 Pomodoro
                 </button>
-                <button onClick={() => setSayacFolder("paragraf")} style={{ background: sayacFolder === "paragraf" ? "#38BDF8" : bgCard, color: sayacFolder === "paragraf" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
+                <button onClick={() => setSayacFolder("paragraf")} style={{ background: sayacFolder === "paragraf" ? "#38BDF8" : bgCard, color: sayacFolder === "paragraf" ? "#090D16" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px 6px", fontWeight: 700, cursor: "pointer", fontSize: "12px", textAlign: "center", boxShadow: sayacFolder === "paragraf" ? "0 4px 12px rgba(56, 189, 248, 0.3)" : "none" }}>
                   📖 Paragraf
                 </button>
               </div>
 
               {/* DERS KRONOMETRESİ */}
               {sayacFolder === "kronometre" && (
-                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
-                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>DERS ÇALIŞMA KRONOMETRESİ</p>
-                  <div style={{ margin: "15px 0", fontSize: "42px", fontWeight: "bold", fontFamily: "serif" }}>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "24px", marginBottom: "20px", textAlign: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.15)" }}>
+                  <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 6px", fontWeight: 700, letterSpacing: "1px" }}>DERS ÇALIŞMA KRONOMETRESİ</p>
+                  <div style={{ margin: "14px 0", fontSize: "44px", fontWeight: 800, fontFamily: "monospace", letterSpacing: "-1px" }}>
                     {formatClock(elapsed)}
                   </div>
                   <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px" }}>
-                    <input placeholder="Ne çalışıyorsun? (örn. Matematik, Tarih)" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={isRunning} style={{ width: "100%", maxWidth: "300px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
+                    <input placeholder="Ne çalışıyorsun? (örn. Matematik, Tarih)" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={isRunning} style={{ width: "100%", maxWidth: "320px", padding: "12px 16px", borderRadius: "12px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px", fontWeight: 600 }} />
                   </div>
                   <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                    <button onClick={handleStartPause} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={handleStartPause} style={{ background: "#38BDF8", color: "#090D16", borderRadius: "12px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px", boxShadow: "0 4px 12px rgba(56, 189, 248, 0.3)" }}>
                       {isRunning ? "Duraklat" : "Başla"}
                     </button>
-                    <button onClick={handleFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={handleFinish} style={{ background: "#2DD4BF", color: "#090D16", borderRadius: "12px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px" }}>
                       Bitir ve Kaydet
                     </button>
-                    <button onClick={handleReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 16px", cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={handleReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px 16px", cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>
                       Sıfırla
                     </button>
                   </div>
@@ -901,33 +957,36 @@
 
               {/* POMODORO */}
               {sayacFolder === "pomodoro" && (
-                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
-                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>POMODORO GERİ SAYIM</p>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "24px", marginBottom: "20px", textAlign: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.15)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginBottom: "4px" }}>
+                    <span className="tree-animate" style={{ fontSize: "18px" }}>🌲</span>
+                    <p style={{ fontSize: "12px", color: textMuted, margin: 0, fontWeight: 700, letterSpacing: "1px" }}>POMODORO & ODAK AĞACI</p>
+                  </div>
                   
-                  <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "12px 0 16px" }}>
+                  <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "14px 0" }}>
                     {[20, 25, 45, 50].map((m) => (
-                      <button key={m} onClick={() => selectPomoTime(m)} style={{ background: pomoMinutes === m ? "#38BDF8" : bgInner, color: pomoMinutes === m ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>
+                      <button key={m} onClick={() => selectPomoTime(m)} style={{ background: pomoMinutes === m ? "#38BDF8" : bgInner, color: pomoMinutes === m ? "#090D16" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontSize: "12px", fontWeight: 800, cursor: "pointer" }}>
                         {m} dk
                       </button>
                     ))}
                   </div>
 
-                  <div style={{ margin: "15px 0", fontSize: "44px", fontWeight: "bold", fontFamily: "serif", color: "#F59E0B" }}>
+                  <div style={{ margin: "14px 0", fontSize: "46px", fontWeight: 800, fontFamily: "monospace", color: "#F59E0B" }}>
                     {formatClock(pomoSecondsLeft)}
                   </div>
 
                   <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px" }}>
-                    <input placeholder="Pomodoro Dersi (örn. Vatandaşlık)" value={pomoSubject} onChange={(e) => setPomoSubject(e.target.value)} disabled={isPomoRunning} style={{ width: "100%", maxWidth: "300px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
+                    <input placeholder="Pomodoro Dersi (örn. Vatandaşlık)" value={pomoSubject} onChange={(e) => setPomoSubject(e.target.value)} disabled={isPomoRunning} style={{ width: "100%", maxWidth: "320px", padding: "12px 16px", borderRadius: "12px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px", fontWeight: 600 }} />
                   </div>
 
                   <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                    <button onClick={() => setIsPomoRunning(!isPomoRunning)} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={() => setIsPomoRunning(!isPomoRunning)} style={{ background: "#38BDF8", color: "#090D16", borderRadius: "12px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px" }}>
                       {isPomoRunning ? "Duraklat" : "Başla"}
                     </button>
-                    <button onClick={handlePomoFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={handlePomoFinish} style={{ background: "#2DD4BF", color: "#090D16", borderRadius: "12px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px" }}>
                       Bitir ve Kaydet
                     </button>
-                    <button onClick={() => { setIsPomoRunning(false); setPomoSecondsLeft(pomoMinutes * 60); pomoRemainingAtPauseRef.current = pomoMinutes * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 16px", cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={() => { setIsPomoRunning(false); setPomoSecondsLeft(pomoMinutes * 60); pomoRemainingAtPauseRef.current = pomoMinutes * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px 16px", cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>
                       Sıfırla
                     </button>
                   </div>
@@ -936,29 +995,29 @@
 
               {/* PARAGRAF */}
               {sayacFolder === "paragraf" && (
-                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
-                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>PARAGRAF / SORU KRONOMETRESİ</p>
-                  <div style={{ margin: "15px 0", fontSize: "40px", fontWeight: "bold", fontFamily: "serif", color: "#2DD4BF" }}>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "24px", marginBottom: "20px", textAlign: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.15)" }}>
+                  <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 6px", fontWeight: 700, letterSpacing: "1px" }}>PARAGRAF / SORU KRONOMETRESİ</p>
+                  <div style={{ margin: "14px 0", fontSize: "42px", fontWeight: 800, fontFamily: "monospace", color: "#2DD4BF" }}>
                     {formatClock(pElapsed)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "16px" }}>
-                    <span style={{ fontSize: "14px", color: textMuted }}>Çözülen Soru:</span>
-                    <span style={{ fontSize: "20px", fontWeight: 700 }}>{pCount} adet</span>
+                    <span style={{ fontSize: "14px", color: textMuted, fontWeight: 600 }}>Çözülen Soru:</span>
+                    <span style={{ fontSize: "20px", fontWeight: 800 }}>{pCount} adet</span>
                   </div>
                   <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px" }}>
-                    <button onClick={() => setPCount(c => Math.max(0, c - 5))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: "bold", cursor: "pointer" }}>-5</button>
-                    <button onClick={() => setPCount(c => Math.max(0, c - 1))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: "bold", cursor: "pointer" }}>-1</button>
-                    <button onClick={() => setPCount(c => c + 1)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "10px", padding: "8px 16px", fontWeight: "bold", cursor: "pointer" }}>+1</button>
-                    <button onClick={() => setPCount(c => c + 5)} style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "10px", padding: "8px 16px", fontWeight: "bold", cursor: "pointer" }}>+5</button>
+                    <button onClick={() => setPCount(c => Math.max(0, c - 5))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: 800, cursor: "pointer" }}>-5</button>
+                    <button onClick={() => setPCount(c => Math.max(0, c - 1))} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: 800, cursor: "pointer" }}>-1</button>
+                    <button onClick={() => setPCount(c => c + 1)} style={{ background: "#2DD4BF", color: "#090D16", border: "none", borderRadius: "10px", padding: "8px 16px", fontWeight: 800, cursor: "pointer" }}>+1</button>
+                    <button onClick={() => setPCount(c => c + 5)} style={{ background: "#2DD4BF", color: "#090D16", border: "none", borderRadius: "10px", padding: "8px 16px", fontWeight: 800, cursor: "pointer" }}>+5</button>
                   </div>
                   <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                    <button onClick={handlePStartPause} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={handlePStartPause} style={{ background: "#2DD4BF", color: "#090D16", borderRadius: "12px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px" }}>
                       {pIsRunning ? "Duraklat" : "Başla"}
                     </button>
-                    <button onClick={handlePFinish} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={handlePFinish} style={{ background: "#38BDF8", color: "#090D16", borderRadius: "12px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px" }}>
                       Bitir ve Kaydet
                     </button>
-                    <button onClick={handlePReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 16px", cursor: "pointer", fontSize: "14px" }}>
+                    <button onClick={handlePReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px 16px", cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>
                       Sıfırla
                     </button>
                   </div>
@@ -966,57 +1025,57 @@
               )}
 
               {/* GÜNLÜK ÇALIŞMA NOTU */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "24px" }}>
-                <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 10px", color: textMuted }}>📝 Bugünün Notu / Hedef Özeti</p>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 10px", color: textMuted }}>📝 Bugünün Notu / Hedef Özeti</p>
                 <textarea 
                   rows="3" 
                   placeholder="Bugün neler yaptık? Yarın hangi konulara ağırlık vereceğiz?" 
                   value={currentNoteText} 
                   onChange={(e) => setCurrentNoteText(e.target.value)}
-                  style={{ width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px", fontSize: "13px", resize: "vertical", marginBottom: "10px" }}
+                  style={{ width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", fontSize: "13px", fontWeight: 600, resize: "vertical", marginBottom: "10px" }}
                 />
-                <button onClick={handleSaveNote} style={{ background: "#38BDF8", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "8px 16px", fontWeight: 600, cursor: "pointer", fontSize: "12px" }}>
+                <button onClick={handleSaveNote} style={{ background: "#38BDF8", color: "#090D16", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 800, cursor: "pointer", fontSize: "12px" }}>
                   Notu Kaydet
                 </button>
               </div>
 
               {/* ÖZET KARTLARI */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
-                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px" }}>
-                  <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün ders</p>
-                  <p style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>{formatMinutes(todayMinutes)}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "16px" }}>
+                  <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 4px", fontWeight: 700 }}>Bugün ders</p>
+                  <p style={{ fontSize: "17px", fontWeight: 800, margin: 0 }}>{formatMinutes(todayMinutes)}</p>
                 </div>
-                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px" }}>
-                  <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün paragraf</p>
-                  <p style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>{formatMinutes(todayParagraphMinutes)} ({todayParagraphCount} soru)</p>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "16px" }}>
+                  <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 4px", fontWeight: 700 }}>Bugün paragraf</p>
+                  <p style={{ fontSize: "17px", fontWeight: 800, margin: 0 }}>{formatMinutes(todayParagraphMinutes)} ({todayParagraphCount} soru)</p>
                 </div>
-                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", gridColumn: "span 2" }}>
-                  <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bu hafta toplam ders</p>
-                  <p style={{ fontSize: "20px", fontWeight: 600, margin: 0 }}>{formatMinutes(weekMinutes)}</p>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "16px", gridColumn: "span 2" }}>
+                  <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 4px", fontWeight: 700 }}>Bu hafta toplam ders</p>
+                  <p style={{ fontSize: "19px", fontWeight: 800, margin: 0, color: "#38BDF8" }}>{formatMinutes(weekMinutes)}</p>
                 </div>
               </div>
 
               {/* GEÇMİŞ OTURUMLAR */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "30px" }}>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
-                  <p style={{ fontSize: "13px", color: textMuted, margin: 0, fontWeight: 600 }}>Geçmiş Oturumlar</p>
+                  <p style={{ fontSize: "13px", color: textMuted, margin: 0, fontWeight: 700 }}>Geçmiş Oturumlar</p>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 10px", fontSize: "12px" }} />
-                    {filterDate && <button onClick={() => setFilterDate("")} style={{ background: "transparent", color: "#38BDF8", border: "none", cursor: "pointer", fontSize: "12px" }}>Tümü</button>}
+                    <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "6px 10px", fontSize: "12px", fontWeight: 600 }} />
+                    {filterDate && <button onClick={() => setFilterDate("")} style={{ background: "transparent", color: "#38BDF8", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}>Tümü</button>}
                   </div>
                 </div>
 
                 {filteredSessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Kayıt bulunamadı.</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "260px", overflowY: "auto" }}>
                   {filteredSessions.map((item) => (
-                    <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "10px 14px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "10px" }}>
+                    <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "12px 14px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "12px", fontWeight: 600 }}>
                       <span>
                         {item.type === "paragraf" 
                           ? `📖 Paragraf — ${item.date} — ${item.count} soru (${formatClock(item.seconds)})`
                           : `${item.subject} — ${item.date} — ${formatMinutes(item.minutes)}`
                         }
                       </span>
-                      <button onClick={() => deleteSession(item.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold" }}>Sil</button>
+                      <button onClick={() => deleteSession(item.id)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: 800 }}>Sil</button>
                     </div>
                   ))}
                 </div>
@@ -1028,42 +1087,42 @@
           {/* 2. İSTATİSTİKLER SEKMESİ */}
           {activeTab === "istatistik" && (
             <div>
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 6px", fontWeight: 600 }}>📊 DETAYLI HAFTALIK RAPOR</p>
-                <p style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 16px", color: "#38BDF8" }}>Toplam Çalışma: {formatMinutes(weekMinutes)}</p>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 6px", fontWeight: 700 }}>📊 HAFTALIK GRAFİK</p>
+                <p style={{ fontSize: "20px", fontWeight: 800, margin: "0 0 16px", color: "#38BDF8" }}>Toplam: {formatMinutes(weekMinutes)}</p>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "140px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}` }}>
                   {weekData.map((d, i) => {
                     const heightPct = Math.max(8, Math.round((d.dakika / maxWeekMin) * 100));
                     return (
                       <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, height: "100%", justifyContent: "flex-end" }}>
-                        <span style={{ fontSize: "10px", color: textMuted, marginBottom: "4px" }}>{d.dakika}d</span>
-                        <div style={{ width: "70%", maxWidth: "28px", height: `${heightPct}%`, background: d.dakika > 0 ? "#38BDF8" : bgInner, borderRadius: "6px 6px 0 0", transition: "height 0.4s ease" }}></div>
+                        <span style={{ fontSize: "10px", color: textMuted, marginBottom: "4px", fontWeight: 700 }}>{d.dakika}d</span>
+                        <div style={{ width: "70%", maxWidth: "26px", height: `${heightPct}%`, background: d.dakika > 0 ? "#38BDF8" : bgInner, borderRadius: "6px 6px 0 0", transition: "height 0.4s ease" }}></div>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 600 }}>📅 Günlük Dakika Tablosu</p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", textAlign: "center" }}>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 700 }}>📅 Günlük Dağılım</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", textAlign: "center" }}>
                   {weekData.map((d, i) => (
-                    <div key={i} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 4px" }}>
-                      <p style={{ fontSize: "10px", color: textMuted, margin: "0 0 4px" }}>{d.label}</p>
-                      <p style={{ fontSize: "13px", fontWeight: 600, margin: 0 }}>{d.dakika}d</p>
+                    <div key={i} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "10px 2px" }}>
+                      <p style={{ fontSize: "10px", color: textMuted, margin: "0 0 4px", fontWeight: 700 }}>{d.label}</p>
+                      <p style={{ fontSize: "13px", fontWeight: 800, margin: 0 }}>{d.dakika}d</p>
                     </div>
                   ))}
                 </div>
               </div>
 
               {subjectDistribution.length > 0 && (
-                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "24px" }}>
-                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 600 }}>Derslere Göre Toplam Dağılım</p>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "20px" }}>
+                  <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 700 }}>Ders Dağılımı</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     {subjectDistribution.map(([subj, mins]) => (
-                      <div key={subj} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", background: bgInner, padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderCard}` }}>
-                        <span style={{ fontWeight: 600 }}>{subj}</span>
-                        <span>{formatMinutes(mins)}</span>
+                      <div key={subj} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", background: bgInner, padding: "12px 14px", borderRadius: "12px", border: `1px solid ${borderCard}` }}>
+                        <span style={{ fontWeight: 700 }}>{subj}</span>
+                        <span style={{ fontWeight: 800, color: "#38BDF8" }}>{formatMinutes(mins)}</span>
                       </div>
                     ))}
                   </div>
@@ -1076,24 +1135,24 @@
           {/* 3. KONULAR SEKMESİ */}
           {activeTab === "konular" && (
             <div>
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 10px", fontWeight: 600 }}>KPSS / ÖSYM Ders Seçimi</p>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "16px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 10px", fontWeight: 700 }}>KPSS Ders Seçimi</p>
                 <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
                   {DEFAULT_SUBJECTS.map((s) => (
-                    <button key={s} onClick={() => setActiveTopicSubj(s)} style={{ background: activeTopicSubj === s ? "#38BDF8" : bgInner, color: activeTopicSubj === s ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontWeight: 600, cursor: "pointer", fontSize: "12px", whiteSpace: "nowrap" }}>
+                    <button key={s} onClick={() => setActiveTopicSubj(s)} style={{ background: activeTopicSubj === s ? "#38BDF8" : bgInner, color: activeTopicSubj === s ? "#090D16" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", whiteSpace: "nowrap" }}>
                       {s}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* FLASHCARD (HIZLI KART) TEKRAR MODU */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 10px", color: "#38BDF8" }}>🃏 Hızlı Bilgi Kartları (Flashcard)</p>
+              {/* FLASHCARD MODU */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 10px", color: "#38BDF8" }}>🃏 Hızlı Bilgi Kartları (Flashcard)</p>
                 <form onSubmit={handleAddFlashcard} style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
-                  <input placeholder="Ön Yüz (Soru / Terim, örn. İdatî nedir?)" value={fcFront} onChange={(e) => setFcFront(e.target.value)} style={{ padding: "10px 12px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
-                  <input placeholder="Arka Yüz (Cevap / Tanım, örn. Osmanlı lisesi)" value={fcBack} onChange={(e) => setFcBack(e.target.value)} style={{ padding: "10px 12px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
-                  <button type="submit" style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "10px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>Kart Ekle</button>
+                  <input placeholder="Ön Yüz (Soru, örn. İdatî nedir?)" value={fcFront} onChange={(e) => setFcFront(e.target.value)} style={{ padding: "12px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
+                  <input placeholder="Arka Yüz (Cevap, örn. Osmanlı lisesi)" value={fcBack} onChange={(e) => setFcBack(e.target.value)} style={{ padding: "12px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
+                  <button type="submit" style={{ background: "#2DD4BF", color: "#090D16", border: "none", borderRadius: "10px", padding: "10px", fontWeight: 800, cursor: "pointer", fontSize: "13px" }}>Kart Ekle</button>
                 </form>
 
                 {flashcards.length > 0 && (
@@ -1101,10 +1160,10 @@
                     {flashcards.map(c => {
                       const isFlipped = flippedCardId === c.id;
                       return (
-                        <div key={c.id} onClick={() => setFlippedCardId(isFlipped ? null : c.id)} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "14px", cursor: "pointer", position: "relative" }}>
-                          <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 4px" }}>{isFlipped ? "🟢 Cevap (Gizlemek için tıkla):" : "🔵 Soru (Cevap için tıkla):"}</p>
-                          <p style={{ fontSize: "14px", fontWeight: 600, margin: 0, color: isFlipped ? "#38BDF8" : colorMain }}>{isFlipped ? c.back : c.front}</p>
-                          <button onClick={(e) => { e.stopPropagation(); deleteFlashcard(c.id); }} style={{ position: "absolute", top: "10px", right: "12px", background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
+                        <div key={c.id} onClick={() => setFlippedCardId(isFlipped ? null : c.id)} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px", cursor: "pointer", position: "relative" }}>
+                          <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 4px", fontWeight: 700 }}>{isFlipped ? "🟢 Cevap (Kapatmak için tıkla):" : "🔵 Soru (Cevap için tıkla):"}</p>
+                          <p style={{ fontSize: "14px", fontWeight: 800, margin: 0, color: isFlipped ? "#38BDF8" : colorMain }}>{isFlipped ? c.back : c.front}</p>
+                          <button onClick={(e) => { e.stopPropagation(); deleteFlashcard(c.id); }} style={{ position: "absolute", top: "10px", right: "12px", background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "12px" }}>Sil</button>
                         </div>
                       );
                     })}
@@ -1112,46 +1171,46 @@
                 )}
               </div>
 
-              {/* HIZLI YANLIŞ / TEKRAR NOTU */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 10px" }}>📌 {activeTopicSubj} - Yanlış / Tekrar Notu Ekle</p>
+              {/* HIZLI YANLIŞ NOTU */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 10px" }}>📌 {activeTopicSubj} - Yanlış / Tekrar Notu</p>
                 <form onSubmit={handleAddWrongNote} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   <textarea 
                     rows="2" 
-                    placeholder="Unutulmaması gereken formül, kural veya yanlış yapılan soru detayı..." 
+                    placeholder="Unutulmaması gereken formül veya yanlış yapılan soru detayı..." 
                     value={newWrongText} 
                     onChange={(e) => setNewWrongText(e.target.value)}
-                    style={{ width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px", fontSize: "13px", resize: "vertical" }}
+                    style={{ width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", fontSize: "13px", fontWeight: 600, resize: "vertical" }}
                   />
-                  <button type="submit" style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", borderRadius: "8px", padding: "10px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
-                    Notu / Yanlışı Kaydet
+                  <button type="submit" style={{ background: "#2DD4BF", color: "#090D16", border: "none", borderRadius: "10px", padding: "10px", fontWeight: 800, cursor: "pointer", fontSize: "13px" }}>
+                    Notu Kaydet
                   </button>
                 </form>
 
                 {wrongNotes.filter(w => w.subject === activeTopicSubj).length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
                     {wrongNotes.filter(w => w.subject === activeTopicSubj).map(w => (
-                      <div key={w.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, fontSize: "13px" }}>
+                      <div key={w.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "12px 14px", borderRadius: "12px", border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }}>
                         <span>💡 {w.text}</span>
-                        <button onClick={() => deleteWrongNote(w.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
+                        <button onClick={() => deleteWrongNote(w.id)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "12px" }}>Sil</button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
-                  <p style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "#38BDF8" }}>📚 {activeTopicSubj} Konu Analizi</p>
-                  <div style={{ background: bgInner, border: `1px solid ${borderCard}`, padding: "6px 12px", borderRadius: "8px" }}>
-                    <span style={{ fontSize: "12px", color: textMuted }}>Toplam Süre: </span>
-                    <strong style={{ fontSize: "13px", color: "#2DD4BF" }}>{formatMinutes(activeSubjectTotalMins)}</strong>
+                  <p style={{ fontSize: "15px", fontWeight: 800, margin: 0, color: "#38BDF8" }}>📚 {activeTopicSubj} Konuları</p>
+                  <div style={{ background: bgInner, border: `1px solid ${borderCard}`, padding: "6px 12px", borderRadius: "10px" }}>
+                    <span style={{ fontSize: "11px", color: textMuted, fontWeight: 700 }}>Süre: </span>
+                    <strong style={{ fontSize: "13px", color: "#2DD4BF", fontWeight: 800 }}>{formatMinutes(activeSubjectTotalMins)}</strong>
                   </div>
                 </div>
                 
                 <form onSubmit={handleAddTopic} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-                  <input placeholder="Yeni konu ekle (örn. Özel Konu)" value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} style={{ flex: 1, padding: "12px 14px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
-                  <button type="submit" style={{ background: "#38BDF8", color: "#0B0F19", border: "none", padding: "12px 18px", borderRadius: "10px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>Ekle</button>
+                  <input placeholder="Yeni konu ekle..." value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} style={{ flex: 1, padding: "12px 14px", borderRadius: "12px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
+                  <button type="submit" style={{ background: "#38BDF8", color: "#090D16", border: "none", padding: "12px 18px", borderRadius: "12px", fontWeight: 800, cursor: "pointer", fontSize: "13px" }}>Ekle</button>
                 </form>
 
                 {(() => {
@@ -1161,8 +1220,8 @@
                   return (
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <span style={{ fontSize: "12px", color: textMuted }}>Tamamlanma Yüzdesi</span>
-                        <span style={{ fontSize: "12px", fontWeight: 600, color: "#2DD4BF" }}>%{pct} ({completedCount}/{list.length} Konu Bitti)</span>
+                        <span style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>İlerleme</span>
+                        <span style={{ fontSize: "12px", fontWeight: 800, color: "#2DD4BF" }}>%{pct} ({completedCount}/{list.length})</span>
                       </div>
                       <div style={{ width: "100%", background: bgInner, height: "8px", borderRadius: "4px", overflow: "hidden", marginBottom: "16px" }}>
                         <div style={{ width: `${pct}%`, background: "#2DD4BF", height: "100%", transition: "width 0.3s ease" }}></div>
@@ -1174,8 +1233,8 @@
                           const topicKey = `${activeTopicSubj}_${t.id}`;
                           const currentMins = topicMinutes[topicKey] || 0;
                           return (
-                            <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "10px 12px", borderRadius: "10px", border: `1px solid ${borderCard}`, flexWrap: "wrap", gap: "8px" }}>
-                              <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", cursor: "pointer", textDecoration: t.completed ? "line-through" : "none", color: t.completed ? textMuted : colorMain, flex: 1, minWidth: "150px" }}>
+                            <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "12px 14px", borderRadius: "12px", border: `1px solid ${borderCard}`, flexWrap: "wrap", gap: "8px" }}>
+                              <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", cursor: "pointer", textDecoration: t.completed ? "line-through" : "none", color: t.completed ? textMuted : colorMain, fontWeight: 600, flex: 1, minWidth: "150px" }}>
                                 <input type="checkbox" checked={t.completed} onChange={() => toggleTopic(activeTopicSubj, t.id)} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
                                 {t.name}
                               </label>
@@ -1185,10 +1244,10 @@
                                   value={currentMins === 0 ? "" : currentMins} 
                                   placeholder="0" 
                                   onChange={(e) => updateTopicMinutesValue(topicKey, e.target.value)} 
-                                  style={{ width: "56px", background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "6px", padding: "4px 6px", fontSize: "12px", textAlign: "center" }} 
+                                  style={{ width: "56px", background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px", fontSize: "12px", textAlign: "center", fontWeight: 700 }} 
                                 />
-                                <span style={{ fontSize: "11px", color: textMuted }}>dk</span>
-                                <button onClick={() => deleteTopic(activeTopicSubj, t.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold", marginLeft: "4px" }}>Sil</button>
+                                <span style={{ fontSize: "11px", color: textMuted, fontWeight: 700 }}>dk</span>
+                                <button onClick={() => deleteTopic(activeTopicSubj, t.id)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 800, marginLeft: "4px" }}>Sil</button>
                               </div>
                             </div>
                           );
@@ -1205,82 +1264,82 @@
           {/* 4. DENEMELER SEKMESİ */}
           {activeTab === "denemeler" && (
             <div>
-              {/* AKILLI ANALİZ KUTUSU */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 4px", color: "#38BDF8" }}>🧠 Yapay Koç Deneme Analizi</p>
-                <p style={{ fontSize: "13px", margin: 0, color: colorMain }}>{weakSubjectAnalysis}</p>
+              {/* YAPAY KOÇ ANALİZ KUTUSU */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 800, margin: "0 0 6px", color: "#38BDF8" }}>🧠 Yapay Koç Deneme Analizi</p>
+                <p style={{ fontSize: "13px", margin: 0, fontWeight: 600, lineHeight: 1.4 }}>{weakSubjectAnalysis}</p>
               </div>
 
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "20px", marginBottom: "20px", textAlign: "center" }}>
-                <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 6px", fontWeight: 700, letterSpacing: "1px" }}>⏳ ÖSYM SINAV SALONU SÜREÇ YÖNETİMİ</p>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "22px", marginBottom: "16px", textAlign: "center" }}>
+                <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 6px", fontWeight: 800, letterSpacing: "1px" }}>⏳ ÖSYM SALON SÜREÇ YÖNETİMİ</p>
                 
                 <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "12px 0 16px" }}>
                   {[100, 135, 150, 180].map((mins) => (
-                    <button key={mins} onClick={() => selectExamDuration(mins)} style={{ background: examDurationMins === mins ? examClockColor : bgInner, color: examDurationMins === mins ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>
+                    <button key={mins} onClick={() => selectExamDuration(mins)} style={{ background: examDurationMins === mins ? examClockColor : bgInner, color: examDurationMins === mins ? "#090D16" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 12px", fontSize: "12px", fontWeight: 800, cursor: "pointer" }}>
                       {mins} dk
                     </button>
                   ))}
                 </div>
 
-                <div className={isExamCritical ? "exam-danger" : ""} style={{ margin: "15px 0", fontSize: "46px", fontWeight: "bold", fontFamily: "serif", color: examClockColor, textShadow: isExamCritical ? "0 0 15px rgba(244,63,94,0.4)" : "none" }}>
+                <div className={isExamCritical ? "exam-danger" : ""} style={{ margin: "14px 0", fontSize: "46px", fontWeight: 800, fontFamily: "monospace", color: examClockColor }}>
                   {formatClock(examSecondsLeft)}
                 </div>
 
                 {isExamCritical && (
-                  <p style={{ fontSize: "12px", color: "#F43F5E", fontWeight: 700, margin: "0 0 10px" }}>⚠️ DİKKAT! SINAVIN SON DAKİKALARI, KODLAMAYI UNUTMA!</p>
+                  <p style={{ fontSize: "12px", color: "#EF4444", fontWeight: 800, margin: "0 0 10px" }}>⚠️ DİKKAT! SINAVIN SON DAKİKALARI!</p>
                 )}
                 
                 <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "14px" }}>
-                  <input placeholder="Deneme Sınavı Adı (örn. KPSS GY-GK Deneme)" value={examTimerName} onChange={(e) => setExamTimerName(e.target.value)} disabled={isExamRunning} style={{ width: "100%", maxWidth: "300px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "13px" }} />
+                  <input placeholder="Deneme Sınavı Adı..." value={examTimerName} onChange={(e) => setExamTimerName(e.target.value)} disabled={isExamRunning} style={{ width: "100%", maxWidth: "320px", padding: "12px 16px", borderRadius: "12px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "13px", fontWeight: 600 }} />
                 </div>
                 
                 <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
-                  <button onClick={() => setIsExamRunning(!isExamRunning)} style={{ background: isExamRunning ? "#F43F5E" : "#F59E0B", color: "#0B0F19", borderRadius: "10px", padding: "12px 24px", border: "none", fontWeight: 700, cursor: "pointer", fontSize: "14px" }}>
-                    {isExamRunning ? "Sınavı Duraklat" : "🔥 Sınavı Başlat (Süreyle Yarış)"}
+                  <button onClick={() => setIsExamRunning(!isExamRunning)} style={{ background: isExamRunning ? "#EF4444" : "#F59E0B", color: "#090D16", borderRadius: "12px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px" }}>
+                    {isExamRunning ? "Duraklat" : "🔥 Sınavı Başlat"}
                   </button>
-                  <button onClick={() => { setIsExamRunning(false); setExamSecondsLeft(examDurationMins * 60); examRemainingAtPauseRef.current = examDurationMins * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 16px", cursor: "pointer", fontSize: "13px" }}>
+                  <button onClick={() => { setIsExamRunning(false); setExamSecondsLeft(examDurationMins * 60); examRemainingAtPauseRef.current = examDurationMins * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px 16px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
                     Sıfırla
                   </button>
                 </div>
               </div>
 
               {/* Net Giriş Kartı */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 12px" }}>📈 Yeni Deneme Sonucu Ekle</p>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 12px" }}>📈 Yeni Deneme Sonucu Ekle</p>
                 <form onSubmit={handleAddExam} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <input placeholder="Deneme Adı (örn. ÖSYM Çıkmış Sorular Deneme)" value={examName} onChange={(e) => setExamName(e.target.value)} style={{ padding: "12px 14px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                  <input placeholder="Deneme Adı (örn. ÖSYM Çıkmış Sorular)" value={examName} onChange={(e) => setExamName(e.target.value)} style={{ padding: "12px 16px", borderRadius: "12px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                    <input placeholder="Türkçe Net" type="number" step="0.25" value={examNetTr} onChange={(e) => setExamNetTr(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
-                    <input placeholder="Matematik Net" type="number" step="0.25" value={examNetMat} onChange={(e) => setExamNetMat(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
-                    <input placeholder="Sosyal / Tarih Net" type="number" step="0.25" value={examNetSos} onChange={(e) => setExamNetSos(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
-                    <input placeholder="Fen / Vatandaşlık Net" type="number" step="0.25" value={examNetFen} onChange={(e) => setExamNetFen(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                    <input placeholder="Türkçe Net" type="number" step="0.25" value={examNetTr} onChange={(e) => setExamNetTr(e.target.value)} style={{ padding: "10px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
+                    <input placeholder="Matematik Net" type="number" step="0.25" value={examNetMat} onChange={(e) => setExamNetMat(e.target.value)} style={{ padding: "10px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
+                    <input placeholder="Sosyal / Tarih Net" type="number" step="0.25" value={examNetSos} onChange={(e) => setExamNetSos(e.target.value)} style={{ padding: "10px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
+                    <input placeholder="Fen / Vatandaşlık Net" type="number" step="0.25" value={examNetFen} onChange={(e) => setExamNetFen(e.target.value)} style={{ padding: "10px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
                   </div>
-                  <button type="submit" style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", padding: "12px", borderRadius: "10px", fontWeight: 600, cursor: "pointer", fontSize: "13px", marginTop: "4px" }}>Denemeyi Kaydet</button>
+                  <button type="submit" style={{ background: "#2DD4BF", color: "#090D16", border: "none", padding: "12px", borderRadius: "12px", fontWeight: 800, cursor: "pointer", fontSize: "13px", marginTop: "4px" }}>Denemeyi Kaydet</button>
                 </form>
               </div>
 
-              {/* Geçmiş Deneme Sonuçları */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 600 }}>Geçmiş Deneme Sonuçları & Gelişim</p>
+              {/* Geçmiş Denemeler */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "18px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 700 }}>Geçmiş Deneme Sonuçları</p>
                 {exams.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kaydedilmiş deneme yok.</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "280px", overflowY: "auto" }}>
                   {exams.map((ex, idx) => {
                     const prevEx = exams[idx + 1];
                     const diff = prevEx ? (ex.total - prevEx.total).toFixed(2) : null;
                     return (
-                      <div key={ex.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div key={ex.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
-                          <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 4px" }}>{ex.name} <span style={{ fontSize: "11px", color: textMuted }}>({ex.date})</span></p>
-                          <p style={{ fontSize: "12px", color: textMuted, margin: 0 }}>
-                            Toplam Net: <strong style={{ color: "#38BDF8" }}>{ex.total}</strong> 
+                          <p style={{ fontSize: "13px", fontWeight: 800, margin: "0 0 4px" }}>{ex.name} <span style={{ fontSize: "11px", color: textMuted }}>({ex.date})</span></p>
+                          <p style={{ fontSize: "12px", color: textMuted, margin: 0, fontWeight: 600 }}>
+                            Toplam Net: <strong style={{ color: "#38BDF8", fontWeight: 800 }}>{ex.total}</strong> 
                             {diff !== null && (
-                              <span style={{ marginLeft: "8px", color: Number(diff) >= 0 ? "#2DD4BF" : "#F43F5E", fontWeight: 600 }}>
+                              <span style={{ marginLeft: "8px", color: Number(diff) >= 0 ? "#2DD4BF" : "#EF4444", fontWeight: 800 }}>
                                 ({Number(diff) >= 0 ? "+" + diff : diff})
                               </span>
                             )}
                           </p>
                         </div>
-                        <button onClick={() => deleteExam(ex.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
+                        <button onClick={() => deleteExam(ex.id)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "12px" }}>Sil</button>
                       </div>
                     );
                   })}
@@ -1290,7 +1349,7 @@
           )}
 
 
-          {/* UYGULAMANIN EN ALTINDAKİ 4'LÜ KESİNLİKLE OYNAMAYAN SABİT SEKME ÇUBUĞU */}
+          {/* UYGULAMANIN EN ALTINDAKİ 4'LÜ SABİT MODERN SEKME ÇUBUĞU */}
           <div style={{ 
             position: "fixed", 
             bottom: 0, 
@@ -1302,18 +1361,18 @@
             justifyContent: "space-around", 
             padding: "10px 8px", 
             zIndex: 9999,
-            boxShadow: "0 -4px 12px rgba(0,0,0,0.2)"
+            boxShadow: "0 -6px 20px rgba(0,0,0,0.25)"
           }}>
-            <button onClick={() => setActiveTab("sayac")} style={{ background: activeTab === "sayac" ? "#38BDF8" : "transparent", color: activeTab === "sayac" ? "#0B0F19" : colorMain, border: "none", borderRadius: "8px", padding: "8px 10px", fontWeight: 600, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center" }}>
+            <button onClick={() => setActiveTab("sayac")} style={{ background: activeTab === "sayac" ? "#38BDF8" : "transparent", color: activeTab === "sayac" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 12px", fontWeight: 800, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center", transition: "all 0.2s ease" }}>
               ⏱️ Sayaç
             </button>
-            <button onClick={() => setActiveTab("istatistik")} style={{ background: activeTab === "istatistik" ? "#38BDF8" : "transparent", color: activeTab === "istatistik" ? "#0B0F19" : colorMain, border: "none", borderRadius: "8px", padding: "8px 10px", fontWeight: 600, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center" }}>
+            <button onClick={() => setActiveTab("istatistik")} style={{ background: activeTab === "istatistik" ? "#38BDF8" : "transparent", color: activeTab === "istatistik" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 12px", fontWeight: 800, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center", transition: "all 0.2s ease" }}>
               📊 İstatistik
             </button>
-            <button onClick={() => setActiveTab("konular")} style={{ background: activeTab === "konular" ? "#38BDF8" : "transparent", color: activeTab === "konular" ? "#0B0F19" : colorMain, border: "none", borderRadius: "8px", padding: "8px 10px", fontWeight: 600, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center" }}>
+            <button onClick={() => setActiveTab("konular")} style={{ background: activeTab === "konular" ? "#38BDF8" : "transparent", color: activeTab === "konular" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 12px", fontWeight: 800, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center", transition: "all 0.2s ease" }}>
               📚 Konular
             </button>
-            <button onClick={() => setActiveTab("denemeler")} style={{ background: activeTab === "denemeler" ? "#38BDF8" : "transparent", color: activeTab === "denemeler" ? "#0B0F19" : colorMain, border: "none", borderRadius: "8px", padding: "8px 10px", fontWeight: 600, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center" }}>
+            <button onClick={() => setActiveTab("denemeler")} style={{ background: activeTab === "denemeler" ? "#38BDF8" : "transparent", color: activeTab === "denemeler" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 12px", fontWeight: 800, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center", transition: "all 0.2s ease" }}>
               📈 Deneme
             </button>
           </div>
