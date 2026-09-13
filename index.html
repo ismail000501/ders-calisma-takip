@@ -33,8 +33,8 @@
       100% { transform: translateY(0px); }
     }
     .tree-animate { animation: floatTree 3s ease-in-out infinite; }
-    input, textarea, button { font-family: 'Inter', sans-serif; }
-    input:focus, textarea:focus { outline: none; border-color: #38BDF8 !important; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
+    input, textarea, button, select { font-family: 'Inter', sans-serif; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: #38BDF8 !important; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
     button { transition: transform 0.1s ease, opacity 0.2s ease; }
     button:active { transform: scale(0.97); }
   </style>
@@ -129,7 +129,7 @@
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
       const [filterDate, setFilterDate] = useState("");
-      const [menuOpen, setMenuOpen] = useState(false);
+      const [settingsModalOpen, setSettingsModalOpen] = useState(false);
       const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
 
       const [fcFront, setFcFront] = useState("");
@@ -263,7 +263,13 @@
         else next = "dark";
         setTheme(next);
         try { localStorage.setItem("study-theme", next); } catch (e) {}
-        setMenuOpen(false);
+      };
+
+      const resetAllData = () => {
+        if (confirm("Tüm çalışma verileriniz ve ilerlemeniz sıfırlanacak. Emin misiniz?")) {
+          localStorage.clear();
+          window.location.reload();
+        }
       };
 
       const saveSessions = useCallback((next) => {
@@ -527,7 +533,6 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url; a.download = `ders-takip-yedek-${isoDay(new Date())}.json`; a.click();
-        setMenuOpen(false);
       };
 
       const importData = (e) => {
@@ -551,7 +556,6 @@
           } catch (err) { alert("Geçersiz yedek dosyası!"); }
         };
         reader.readAsText(file);
-        setMenuOpen(false);
       };
 
       const todaySessions = sessions.filter((s) => s.date === today);
@@ -723,24 +727,62 @@
             </p>
           </div>
 
-          {/* AYARLAR / MENÜ BUTONU */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px", position: "relative" }}>
-            <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "14px", width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "18px", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }} title="Ayarlar">⚙️</button>
-
-            {menuOpen && (
-              <div style={{ position: "absolute", top: "52px", right: 0, background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", boxShadow: "0 15px 35px rgba(0,0,0,0.4)", zIndex: 2000, width: "200px", padding: "8px" }}>
-                <button onClick={exportData} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>📥 Yedeği İndir</button>
-                <label style={{ display: "block", width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
-                  📤 Yedek Yükle
-                  <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
-                </label>
-                <div style={{ height: "1px", background: borderCard, margin: "4px 0" }}></div>
-                <button onClick={cycleTheme} style={{ width: "100%", textAlign: "left", background: "transparent", color: colorMain, border: "none", padding: "10px 12px", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
-                  🎨 Tema: {theme === "dark" ? "Karanlık" : theme === "oled" ? "OLED Siyah" : "Aydınlık"}
-                </button>
-              </div>
-            )}
+          {/* AYARLAR BUTONU */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+            <button onClick={() => setSettingsModalOpen(true)} style={{ background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "14px", width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "18px", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }} title="Ayarlar">⚙️</button>
           </div>
+
+          {/* DETAYLI PROFESYONEL AYARLAR MODALI */}
+          {settingsModalOpen && (
+            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "24px", width: "100%", maxWidth: "420px", padding: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800 }}>⚙️ Uygulama Ayarları</h3>
+                  <button onClick={() => setSettingsModalOpen(false)} style={{ background: "transparent", border: "none", color: colorMain, fontSize: "20px", cursor: "pointer", fontWeight: 800 }}>✕</button>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div>
+                    <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700, display: "block", marginBottom: "6px" }}>🎨 GÖRÜNÜM TEMASI</label>
+                    <button onClick={cycleTheme} style={{ width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", fontWeight: 700, fontSize: "13px", cursor: "pointer", textAlign: "left" }}>
+                      Mevcut Tema: <strong style={{ color: "#38BDF8" }}>{theme === "dark" ? "Karanlık" : theme === "oled" ? "OLED Siyah" : "Aydınlık"}</strong> (Değiştirmek için tıkla)
+                    </button>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700, display: "block", marginBottom: "6px" }}>🎯 GÜNLÜK HEDEFLERİ ÖZELLEŞTİR</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                      <div>
+                        <span style={{ fontSize: "11px", color: textMuted, fontWeight: 600 }}>Ders (dk)</span>
+                        <input type="number" value={targetStudyMins} onChange={(e) => updateTargetMins(Number(e.target.value))} style={{ width: "100%", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "10px", padding: "10px", fontSize: "13px", fontWeight: 700 }} />
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "11px", color: textMuted, fontWeight: 600 }}>Paragraf (soru)</span>
+                        <input type="number" value={targetParagraphs} onChange={(e) => updateTargetParagraphs(Number(e.target.value))} style={{ width: "100%", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "10px", padding: "10px", fontSize: "13px", fontWeight: 700 }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
+                    <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700, display: "block" }}>💾 VERİ YÖNETİMİ</label>
+                    <button onClick={exportData} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", fontWeight: 700, fontSize: "13px", cursor: "pointer", textAlign: "left" }}>
+                      📥 Çalışma Verilerini Yedekle (.json)
+                    </button>
+                    <label style={{ display: "block", width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", fontWeight: 700, fontSize: "13px", cursor: "pointer", boxSizing: "border-box" }}>
+                      📤 Yedek Dosyası Yükle
+                      <input type="file" accept=".json" onChange={(e) => { importData(e); setSettingsModalOpen(false); }} style={{ display: "none" }} />
+                    </label>
+                  </div>
+
+                  <div style={{ height: "1px", background: borderCard, margin: "4px 0" }}></div>
+
+                  <button onClick={resetAllData} style={{ background: "rgba(239, 68, 68, 0.15)", color: "#EF4444", border: "1px solid #EF4444", borderRadius: "12px", padding: "12px", fontWeight: 800, fontSize: "13px", cursor: "pointer" }}>
+                    ⚠️ Tüm Verileri Sıfırla (Fabrika Ayarları)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 1. SAYAÇ SEKMESİ */}
           {activeTab === "sayac" && (
@@ -750,7 +792,7 @@
 
                 <div style={{ marginBottom: "14px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
-                    <span>Çalışma: <strong style={{ color: "#38BDF8" }}>{todayMinutes} dk</strong> / <input type="number" value={targetStudyMins} onChange={(e) => updateTargetMins(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "6px", padding: "4px", fontSize: "12px", textAlign: "center", fontWeight: 700 }} /> dk</span>
+                    <span>Çalışma: <strong style={{ color: "#38BDF8" }}>{todayMinutes} dk</strong> / {targetStudyMins} dk</span>
                     <span style={{ color: textMuted, fontWeight: 700 }}>%{Math.min(100, Math.round((todayMinutes / targetStudyMins) * 100))}</span>
                   </div>
                   <div style={{ width: "100%", background: bgInner, height: "8px", borderRadius: "4px", overflow: "hidden" }}>
@@ -760,7 +802,7 @@
 
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
-                    <span>Paragraf: <strong style={{ color: "#2DD4BF" }}>{todayParagraphCount} soru</strong> / <input type="number" value={targetParagraphs} onChange={(e) => updateTargetParagraphs(Number(e.target.value))} style={{ width: "60px", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "6px", padding: "4px", fontSize: "12px", textAlign: "center", fontWeight: 700 }} /> soru</span>
+                    <span>Paragraf: <strong style={{ color: "#2DD4BF" }}>{todayParagraphCount} soru</strong> / {targetParagraphs} soru</span>
                     <span style={{ color: textMuted, fontWeight: 700 }}>%{Math.min(100, Math.round((todayParagraphCount / targetParagraphs) * 100))}</span>
                   </div>
                   <div style={{ width: "100%", background: bgInner, height: "8px", borderRadius: "4px", overflow: "hidden" }}>
@@ -1085,7 +1127,7 @@
                 
                 <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
                   <button onClick={() => setIsExamRunning(!isExamRunning)} style={{ background: isExamRunning ? "#EF4444" : "#F59E0B", color: "#090D16", borderRadius: "14px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px" }}>{isExamRunning ? "Duraklat" : "🔥 Sınavı Başlat"}</button>
-                  <button onClick={() => { setIsExamRunning(false); setExamSecondsLeft(examDurationMins * 60); examRemainingAtPauseRef.current = examDurationMins * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "12px 16px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>Sıfırla</button>
+                  <button onClick={() => { setIsExamRunning(false); setExamSecondsLeft(examDurationMins * 60); examRemainingAtPauseRef.current = examDurationMins * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "12px 16px", cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>Sıfırla</button>
                 </div>
               </div>
 
@@ -1128,24 +1170,39 @@
             </div>
           )}
 
-          {/* PROFESYONEL ALT SABİT NAVİGASYON ÇUBUĞU */}
+          {/* PREMIUM YÜZEN ALT MENÜ (FLOATING NAV BAR) */}
           <div style={{ 
             position: "fixed", 
-            bottom: 0, 
-            left: 0, 
-            right: 0, 
+            bottom: 16, 
+            left: 16, 
+            right: 16, 
+            maxWidth: "648px", 
+            margin: "0 auto", 
             background: bgCard, 
-            borderTop: `1px solid ${borderCard}`, 
+            border: `1px solid ${borderCard}`, 
+            borderRadius: "20px", 
             display: "flex", 
             justifyContent: "space-around", 
-            padding: "12px 10px", 
+            padding: "8px 12px", 
             zIndex: 9999,
-            boxShadow: "0 -10px 30px rgba(0,0,0,0.3)"
+            boxShadow: "0 15px 35px rgba(0,0,0,0.4)"
           }}>
-            <button onClick={() => setActiveTab("sayac")} style={{ background: activeTab === "sayac" ? "#38BDF8" : "transparent", color: activeTab === "sayac" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center", transition: "all 0.2s ease" }}>⏱️ Sayaç</button>
-            <button onClick={() => setActiveTab("istatistik")} style={{ background: activeTab === "istatistik" ? "#38BDF8" : "transparent", color: activeTab === "istatistik" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center", transition: "all 0.2s ease" }}>📊 İstatistik</button>
-            <button onClick={() => setActiveTab("konular")} style={{ background: activeTab === "konular" ? "#38BDF8" : "transparent", color: activeTab === "konular" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center", transition: "all 0.2s ease" }}>📚 Konular</button>
-            <button onClick={() => setActiveTab("denemeler")} style={{ background: activeTab === "denemeler" ? "#38BDF8" : "transparent", color: activeTab === "denemeler" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center", transition: "all 0.2s ease" }}>📈 Deneme</button>
+            <button onClick={() => setActiveTab("sayac")} style={{ background: activeTab === "sayac" ? "#38BDF8" : "transparent", color: activeTab === "sayac" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, transition: "all 0.2s ease" }}>
+              <span style={{ fontSize: "16px" }}>⏱️</span>
+              <span style={{ fontSize: "10px" }}>Sayaç</span>
+            </button>
+            <button onClick={() => setActiveTab("istatistik")} style={{ background: activeTab === "istatistik" ? "#38BDF8" : "transparent", color: activeTab === "istatistik" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, transition: "all 0.2s ease" }}>
+              <span style={{ fontSize: "16px" }}>📊</span>
+              <span style={{ fontSize: "10px" }}>İstatistik</span>
+            </button>
+            <button onClick={() => setActiveTab("konular")} style={{ background: activeTab === "konular" ? "#38BDF8" : "transparent", color: activeTab === "konular" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, transition: "all 0.2s ease" }}>
+              <span style={{ fontSize: "16px" }}>📚</span>
+              <span style={{ fontSize: "10px" }}>Konular</span>
+            </button>
+            <button onClick={() => setActiveTab("denemeler")} style={{ background: activeTab === "denemeler" ? "#38BDF8" : "transparent", color: activeTab === "denemeler" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, transition: "all 0.2s ease" }}>
+              <span style={{ fontSize: "16px" }}>📈</span>
+              <span style={{ fontSize: "10px" }}>Deneme</span>
+            </button>
           </div>
 
         </div>
