@@ -125,6 +125,7 @@
       const [wrongNotes, setWrongNotes] = useState([]);
       const [flashcards, setFlashcards] = useState([]);
       const [forestCount, setForestCount] = useState(0);
+      const [kpssArchive, setKpssArchive] = useState({});
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
@@ -206,6 +207,7 @@
         try { const wn = localStorage.getItem("study-wrong-notes-v1"); if (wn) setWrongNotes(JSON.parse(wn)); } catch (e) {}
         try { const fc = localStorage.getItem("study-flashcards-v1"); if (fc) setFlashcards(JSON.parse(fc)); } catch (e) {}
         try { const fcCount = localStorage.getItem("study-forest-count-v1"); if (fcCount) setForestCount(Number(fcCount)); } catch (e) {}
+        try { const ka = localStorage.getItem("study-kpss-archive-v1"); if (ka) setKpssArchive(JSON.parse(ka)); } catch (e) {}
         try {
           const tp = localStorage.getItem("study-topics-v3");
           if (tp) {
@@ -282,15 +284,11 @@
         try { localStorage.setItem("study-exams-v1", JSON.stringify(next)); } catch (e) {}
       }, []);
 
-      const saveTopics = useCallback((next) => {
-        setTopics(next);
-        try { localStorage.setItem("study-topics-v3", JSON.stringify(next)); } catch (e) {}
-      }, []);
-
-      const saveTopicMinutes = useCallback((next) => {
-        setTopicMinutes(next);
-        try { localStorage.setItem("study-topic-mins-v1", JSON.stringify(next)); } catch (e) {}
-      }, []);
+      const toggleKpssArchiveItem = (year) => {
+        const next = { ...kpssArchive, [year]: !kpssArchive[year] };
+        setKpssArchive(next);
+        try { localStorage.setItem("study-kpss-archive-v1", JSON.stringify(next)); } catch (e) {}
+      };
 
       const handleSaveNote = () => {
         const nextNotes = { ...dailyNotes, [today]: currentNoteText };
@@ -329,12 +327,6 @@
         const nextList = flashcards.filter(c => c.id !== id);
         setFlashcards(nextList);
         try { localStorage.setItem("study-flashcards-v1", JSON.stringify(nextList)); } catch (e) {}
-      };
-
-      const updateTopicMinutesValue = (topicKey, value) => {
-        const mins = Math.max(0, Number(value) || 0);
-        const nextMap = { ...topicMinutes, [topicKey]: mins };
-        saveTopicMinutes(nextMap);
       };
 
       const updateTargetMins = (val) => {
@@ -490,26 +482,6 @@
       const deleteSession = (id) => saveSessions(sessions.filter((s) => s.id !== id));
       const deleteExam = (id) => saveExams(exams.filter((e) => e.id !== id));
 
-      const handleAddTopic = (e) => {
-        e.preventDefault();
-        if (!newTopicName.trim()) return;
-        const list = topics[activeTopicSubj] || [];
-        const nextList = [...list, { id: "custom_" + Date.now(), name: newTopicName.trim(), completed: false }];
-        saveTopics({ ...topics, [activeTopicSubj]: nextList });
-        setNewTopicName("");
-      };
-
-      const toggleTopic = (subj, id) => {
-        const list = topics[subj] || [];
-        const nextList = list.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-        saveTopics({ ...topics, [subj]: nextList });
-      };
-
-      const deleteTopic = (subj, id) => {
-        const list = topics[subj] || [];
-        saveTopics({ ...topics, [subj]: list.filter(t => t.id !== id) });
-      };
-
       const handleAddExam = (e) => {
         e.preventDefault();
         if (!examName.trim()) return;
@@ -528,7 +500,7 @@
       };
 
       const exportData = () => {
-        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes, flashcards, forestCount };
+        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes, flashcards, forestCount, kpssArchive };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -544,11 +516,12 @@
             const data = JSON.parse(event.target.result);
             if (data.sessions) saveSessions(data.sessions);
             if (data.exams) saveExams(data.exams);
-            if (data.topics) saveTopics(data.topics);
-            if (data.topicMinutes) saveTopicMinutes(data.topicMinutes);
+            if (data.topics) setTopics(data.topics);
+            if (data.topicMinutes) setTopicMinutes(data.topicMinutes);
             if (data.dailyNotes) setDailyNotes(data.dailyNotes);
             if (data.wrongNotes) setWrongNotes(data.wrongNotes);
             if (data.flashcards) setFlashcards(data.flashcards);
+            if (data.kpssArchive) setKpssArchive(data.kpssArchive);
             if (data.forestCount !== undefined) setForestCount(data.forestCount);
             if (data.targetStudyMins) updateTargetMins(data.targetStudyMins);
             if (data.targetParagraphs) updateTargetParagraphs(data.targetParagraphs);
@@ -560,7 +533,6 @@
 
       const todaySessions = sessions.filter((s) => s.date === today);
       const todayMinutes = todaySessions.filter(s => s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
-      const todayParagraphMinutes = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + s.minutes, 0);
       const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
 
       const totalXp = useMemo(() => {
@@ -637,40 +609,6 @@
           return Object.entries(map).sort((a, b) => b[1] - a[1]);
         } catch (err) { return []; }
       }, [sessions]);
-
-      const activeSubjectTotalMins = useMemo(() => {
-        const list = topics[activeTopicSubj] || [];
-        return list.reduce((acc, t) => acc + (topicMinutes[`${activeTopicSubj}_${t.id}`] || 0), 0);
-      }, [topics, topicMinutes, activeTopicSubj]);
-
-      const weakSubjectAnalysis = useMemo(() => {
-        if (!exams || exams.length === 0) return "Henüz yeterli deneme verisi yok.";
-        const recentExams = exams.slice(0, 5);
-        let totalTr = 0, totalMat = 0, totalSos = 0, totalFen = 0;
-        recentExams.forEach(ex => {
-          totalTr += (ex.tr || 0); totalMat += (ex.mat || 0); totalSos += (ex.sos || 0); totalFen += (ex.fen || 0);
-        });
-        const avgs = [
-          { name: "Türkçe", val: totalTr / recentExams.length },
-          { name: "Matematik", val: totalMat / recentExams.length },
-          { name: "Sosyal / Tarih", val: totalSos / recentExams.length },
-          { name: "Fen / Vatandaşlık", val: totalFen / recentExams.length }
-        ];
-        avgs.sort((a, b) => a.val - b.val);
-        return `Son denemelere göre öncelik vermen gereken ders: ${avgs[0].name} (Ort. Net: ${avgs[0].val.toFixed(1)})`;
-      }, [exams]);
-
-      const estimatedScore = useMemo(() => {
-        if (!exams || exams.length === 0) return "0.00";
-        const lastEx = exams[0];
-        const base = 40;
-        const netScore = (lastEx.total || 0) * 0.85;
-        const score = base + netScore;
-        return Math.min(100, Math.max(40, score)).toFixed(2);
-      }, [exams]);
-
-      const isExamCritical = examSecondsLeft <= 300 && examSecondsLeft > 0;
-      const examClockColor = isExamCritical ? "#EF4444" : "#F59E0B";
 
       if (!loaded) return null;
 
@@ -933,7 +871,71 @@
             </div>
           )}
 
-          {/* 2. İSTATİSTİK SEKMESİ */}
+          {/* 2. KPSS MERKEZİ SEKMESİ (YENİ ÖZEL KLASÖR) */}
+          {activeTab === "kpss" && (
+            <div>
+              {/* Kalan Gün & Strateji Kartı */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "22px", marginBottom: "16px", boxShadow: "0 8px 25px rgba(0,0,0,0.15)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <div>
+                    <p style={{ fontSize: "11px", fontWeight: 800, color: textMuted, margin: "0 0 2px", letterSpacing: "1px" }}>KPSS 2026 GERİ SAYIM</p>
+                    <p style={{ fontSize: "28px", fontWeight: 800, margin: 0, color: "#F59E0B" }}>{kpssDaysLeft} Gün Kaldı</p>
+                  </div>
+                  <span style={{ background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", padding: "6px 12px", borderRadius: "12px", fontSize: "12px", fontWeight: 800 }}>04 Ekim 2026</span>
+                </div>
+                <p style={{ fontSize: "13px", color: textMuted, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
+                  💡 <strong style={{ color: colorMain }}>Profesyonel Tavsiye:</strong> Bu dönemde konu bitirmekten ziyade çıkmış sorulara (Çıkmış Soru Analizi) ve branş denemelerine ağırlık vermen net artışını %30 hızlandıracaktır.
+                </p>
+              </div>
+
+              {/* ÖSYM Çıkmış Soru Arşivi Takip Modülü */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 4px", color: "#38BDF8" }}>📂 ÖSYM Çıkmış Soru Arşivi (2018 - 2025)</p>
+                <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 14px", fontWeight: 600 }}>Çözdüğün çıkmış soru yıllarını işaretle ve ilerlemeni takip et:</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {[2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018].map((year) => {
+                    const isDone = !!kpssArchive[year];
+                    return (
+                      <div key={year} onClick={() => toggleKpssArchiveItem(year)} style={{ background: isDone ? "rgba(45, 212, 191, 0.1)" : bgInner, border: `1px solid ${isDone ? "#2DD4BF" : borderCard}`, borderRadius: "12px", padding: "12px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                        <span style={{ fontSize: "13px", fontWeight: 800, color: isDone ? "#2DD4BF" : colorMain }}>KPSS {year}</span>
+                        <span style={{ fontSize: "16px" }}>{isDone ? "✅" : "⭕"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* KPSS Puan Dağılımı ve Strateji Tablosu */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 12px", color: "#2DD4BF" }}>📊 KPSS Sınav Yapısı & Katsayı Analizi</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 800 }}>Türkçe (30 Soru)</span>
+                      <span style={{ fontSize: "12px", color: "#38BDF8", fontWeight: 700 }}>Kritik Katsayı</span>
+                    </div>
+                    <p style={{ fontSize: "11px", color: textMuted, margin: 0, fontWeight: 600 }}>Genel Yetenek'in en yüksek puan getiren kısmıdır. Paragraf temelini oluşturur.</p>
+                  </div>
+                  <div style={{ background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 800 }}>Matematik / Mantık (30 Soru)</span>
+                      <span style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 700 }}>Puan Belirleyici</span>
+                    </div>
+                    <p style={{ fontSize: "11px", color: textMuted, margin: 0, fontWeight: 600 }}>Sıralamayı yukarı taşıyan en önemli alandır. Problem ve sayı basamakları odaklıdır.</p>
+                  </div>
+                  <div style={{ background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 800 }}>Tarih (27 Soru)</span>
+                      <span style={{ fontSize: "12px", color: "#2DD4BF", fontWeight: 700 }}>Ezber & Kronoloji</span>
+                    </div>
+                    <p style={{ fontSize: "11px", color: textMuted, margin: 0, fontWeight: 600 }}>İslamiyet öncesinden çağdaş Türk ve dünya tarihine kadar detaylı tekrar gerektirir.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 3. İSTATİSTİK SEKMESİ */}
           {activeTab === "istatistik" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px" }}>
@@ -980,7 +982,7 @@
             </div>
           )}
 
-          {/* 3. KONULAR SEKMESİ */}
+          {/* 4. KONULAR SEKMESİ */}
           {activeTab === "konular" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "18px", marginBottom: "16px" }}>
@@ -1036,19 +1038,7 @@
               </div>
 
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "20px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
-                  <p style={{ fontSize: "15px", fontWeight: 800, margin: 0, color: "#38BDF8" }}>📚 {activeTopicSubj} Konuları</p>
-                  <div style={{ background: bgInner, border: `1px solid ${borderCard}`, padding: "6px 12px", borderRadius: "10px" }}>
-                    <span style={{ fontSize: "11px", color: textMuted, fontWeight: 700 }}>Süre: </span>
-                    <strong style={{ fontSize: "13px", color: "#2DD4BF", fontWeight: 800 }}>{formatMinutes(activeSubjectTotalMins)}</strong>
-                  </div>
-                </div>
-                
-                <form onSubmit={handleAddTopic} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-                  <input placeholder="Yeni konu ekle..." value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} style={{ flex: 1, padding: "12px 14px", borderRadius: "12px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px", fontWeight: 600 }} />
-                  <button type="submit" style={{ background: "#38BDF8", color: "#090D16", border: "none", padding: "12px 18px", borderRadius: "12px", fontWeight: 800, cursor: "pointer", fontSize: "13px" }}>Ekle</button>
-                </form>
-
+                <p style={{ fontSize: "15px", fontWeight: 800, margin: "0 0 14px", color: "#38BDF8" }}>📚 {activeTopicSubj} Konuları</p>
                 {(() => {
                   const list = topics[activeTopicSubj] || [];
                   const completedCount = list.filter(t => t.completed).length;
@@ -1065,23 +1055,18 @@
 
                       {list.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Bu derse ait henüz konu yok.</p>}
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        {list.map(t => {
-                          const topicKey = `${activeTopicSubj}_${t.id}`;
-                          const currentMins = topicMinutes[topicKey] || 0;
-                          return (
-                            <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}`, flexWrap: "wrap", gap: "8px" }}>
-                              <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", cursor: "pointer", textDecoration: t.completed ? "line-through" : "none", color: t.completed ? textMuted : colorMain, fontWeight: 600, flex: 1, minWidth: "150px" }}>
-                                <input type="checkbox" checked={t.completed} onChange={() => toggleTopic(activeTopicSubj, t.id)} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
-                                {t.name}
-                              </label>
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                <input type="number" value={currentMins === 0 ? "" : currentMins} placeholder="0" onChange={(e) => updateTopicMinutesValue(topicKey, e.target.value)} style={{ width: "56px", background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px", fontSize: "12px", textAlign: "center", fontWeight: 700 }} />
-                                <span style={{ fontSize: "11px", color: textMuted, fontWeight: 700 }}>dk</span>
-                                <button onClick={() => deleteTopic(activeTopicSubj, t.id)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 800, marginLeft: "4px" }}>Sil</button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        {list.map(t => (
+                          <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", cursor: "pointer", textDecoration: t.completed ? "line-through" : "none", color: t.completed ? textMuted : colorMain, fontWeight: 600 }}>
+                              <input type="checkbox" checked={t.completed} onChange={() => {
+                                const nextList = list.map(item => item.id === t.id ? { ...item, completed: !item.completed } : item);
+                                setTopics({ ...topics, [activeTopicSubj]: nextList });
+                                try { localStorage.setItem("study-topics-v3", JSON.stringify({ ...topics, [activeTopicSubj]: nextList })); } catch (e) {}
+                              }} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
+                              {t.name}
+                            </label>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   );
@@ -1090,44 +1075,18 @@
             </div>
           )}
 
-          {/* 4. DENEME SEKMESİ */}
+          {/* 5. DENEME SEKMESİ */}
           {activeTab === "denemeler" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.1)" }}>
                 <div>
                   <p style={{ fontSize: "12px", fontWeight: 800, margin: "0 0 2px", color: textMuted }}>🎯 TAHMİNİ KPSS P3 PUANI</p>
-                  <p style={{ fontSize: "26px", fontWeight: 800, margin: 0, color: "#2DD4BF" }}>{estimatedScore}</p>
+                  <p style={{ fontSize: "26px", fontWeight: 800, margin: 0, color: "#2DD4BF" }}>
+                    {exams.length > 0 ? Math.min(100, Math.max(40, 40 + (exams[0].total * 0.85))).toFixed(2) : "0.00"}
+                  </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <span style={{ fontSize: "11px", color: textMuted, background: bgInner, padding: "6px 12px", borderRadius: "10px", fontWeight: 700 }}>Son Denemeye Göre</span>
-                </div>
-              </div>
-
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px" }}>
-                <p style={{ fontSize: "13px", fontWeight: 800, margin: "0 0 6px", color: "#38BDF8" }}>🧠 Yapay Koç Deneme Analizi</p>
-                <p style={{ fontSize: "13px", margin: 0, fontWeight: 600, lineHeight: 1.5 }}>{weakSubjectAnalysis}</p>
-              </div>
-
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "24px", marginBottom: "16px", textAlign: "center", boxShadow: "0 8px 25px rgba(0,0,0,0.15)" }}>
-                <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 6px", fontWeight: 800, letterSpacing: "1px" }}>⏳ ÖSYM SALON SÜREÇ YÖNETİMİ</p>
-                
-                <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "14px 0 16px" }}>
-                  {[100, 135, 150, 180].map((mins) => (
-                    <button key={mins} onClick={() => selectExamDuration(mins)} style={{ background: examDurationMins === mins ? examClockColor : bgInner, color: examDurationMins === mins ? "#090D16" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "8px 12px", fontSize: "12px", fontWeight: 800, cursor: "pointer" }}>{mins} dk</button>
-                  ))}
-                </div>
-
-                <div className={isExamCritical ? "exam-danger" : ""} style={{ margin: "14px 0", fontSize: "48px", fontWeight: 800, fontFamily: "monospace", color: examClockColor }}>{formatClock(examSecondsLeft)}</div>
-
-                {isExamCritical && <p style={{ fontSize: "12px", color: "#EF4444", fontWeight: 800, margin: "0 0 10px" }}>⚠️ DİKKAT! SINAVIN SON DAKİKALARI!</p>}
-                
-                <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px" }}>
-                  <input placeholder="Deneme Sınavı Adı..." value={examTimerName} onChange={(e) => setExamTimerName(e.target.value)} disabled={isExamRunning} style={{ width: "100%", maxWidth: "340px", padding: "12px 16px", borderRadius: "14px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "13px", fontWeight: 600 }} />
-                </div>
-                
-                <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
-                  <button onClick={() => setIsExamRunning(!isExamRunning)} style={{ background: isExamRunning ? "#EF4444" : "#F59E0B", color: "#090D16", borderRadius: "14px", padding: "12px 24px", border: "none", fontWeight: 800, cursor: "pointer", fontSize: "14px" }}>{isExamRunning ? "Duraklat" : "🔥 Sınavı Başlat"}</button>
-                  <button onClick={() => { setIsExamRunning(false); setExamSecondsLeft(examDurationMins * 60); examRemainingAtPauseRef.current = examDurationMins * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "12px 16px", cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>Sıfırla</button>
                 </div>
               </div>
 
@@ -1149,28 +1108,23 @@
                 <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 700 }}>Geçmiş Deneme Sonuçları</p>
                 {exams.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kaydedilmiş deneme yok.</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "280px", overflowY: "auto" }}>
-                  {exams.map((ex, idx) => {
-                    const prevEx = exams[idx + 1];
-                    const diff = prevEx ? (ex.total - prevEx.total).toFixed(2) : null;
-                    return (
-                      <div key={ex.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <p style={{ fontSize: "13px", fontWeight: 800, margin: "0 0 4px" }}>{ex.name} <span style={{ fontSize: "11px", color: textMuted }}>({ex.date})</span></p>
-                          <p style={{ fontSize: "12px", color: textMuted, margin: 0, fontWeight: 600 }}>
-                            Toplam Net: <strong style={{ color: "#38BDF8", fontWeight: 800 }}>{ex.total}</strong> 
-                            {diff !== null && <span style={{ marginLeft: "8px", color: Number(diff) >= 0 ? "#2DD4BF" : "#EF4444", fontWeight: 800 }}>({Number(diff) >= 0 ? "+" + diff : diff})</span>}
-                          </p>
-                        </div>
-                        <button onClick={() => deleteExam(ex.id)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "12px" }}>Sil</button>
+                  {exams.map((ex) => (
+                    <div key={ex.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <p style={{ fontSize: "13px", fontWeight: 800, margin: "0 0 4px" }}>{ex.name} <span style={{ fontSize: "11px", color: textMuted }}>({ex.date})</span></p>
+                        <p style={{ fontSize: "12px", color: textMuted, margin: 0, fontWeight: 600 }}>
+                          Toplam Net: <strong style={{ color: "#38BDF8", fontWeight: 800 }}>{ex.total}</strong>
+                        </p>
                       </div>
-                    );
-                  })}
+                      <button onClick={() => deleteExam(ex.id)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "12px" }}>Sil</button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* PREMIUM YÜZEN ALT MENÜ (FLOATING NAV BAR) */}
+          {/* PREMIUM YÜZEN ALT MENÜ (5 SEKMELİ) */}
           <div style={{ 
             position: "fixed", 
             bottom: 16, 
@@ -1183,25 +1137,29 @@
             borderRadius: "20px", 
             display: "flex", 
             justifyContent: "space-around", 
-            padding: "8px 12px", 
+            padding: "8px 6px", 
             zIndex: 9999,
             boxShadow: "0 15px 35px rgba(0,0,0,0.4)"
           }}>
-            <button onClick={() => setActiveTab("sayac")} style={{ background: activeTab === "sayac" ? "#38BDF8" : "transparent", color: activeTab === "sayac" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, transition: "all 0.2s ease" }}>
-              <span style={{ fontSize: "16px" }}>⏱️</span>
-              <span style={{ fontSize: "10px" }}>Sayaç</span>
+            <button onClick={() => setActiveTab("sayac")} style={{ background: activeTab === "sayac" ? "#38BDF8" : "transparent", color: activeTab === "sayac" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 6px", fontWeight: 800, cursor: "pointer", fontSize: "11px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1 }}>
+              <span style={{ fontSize: "15px" }}>⏱️</span>
+              <span style={{ fontSize: "9px" }}>Sayaç</span>
             </button>
-            <button onClick={() => setActiveTab("istatistik")} style={{ background: activeTab === "istatistik" ? "#38BDF8" : "transparent", color: activeTab === "istatistik" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, transition: "all 0.2s ease" }}>
-              <span style={{ fontSize: "16px" }}>📊</span>
-              <span style={{ fontSize: "10px" }}>İstatistik</span>
+            <button onClick={() => setActiveTab("kpss")} style={{ background: activeTab === "kpss" ? "#38BDF8" : "transparent", color: activeTab === "kpss" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 6px", fontWeight: 800, cursor: "pointer", fontSize: "11px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1 }}>
+              <span style={{ fontSize: "15px" }}>🎯</span>
+              <span style={{ fontSize: "9px" }}>KPSS</span>
             </button>
-            <button onClick={() => setActiveTab("konular")} style={{ background: activeTab === "konular" ? "#38BDF8" : "transparent", color: activeTab === "konular" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, transition: "all 0.2s ease" }}>
-              <span style={{ fontSize: "16px" }}>📚</span>
-              <span style={{ fontSize: "10px" }}>Konular</span>
+            <button onClick={() => setActiveTab("istatistik")} style={{ background: activeTab === "istatistik" ? "#38BDF8" : "transparent", color: activeTab === "istatistik" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 6px", fontWeight: 800, cursor: "pointer", fontSize: "11px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1 }}>
+              <span style={{ fontSize: "15px" }}>📊</span>
+              <span style={{ fontSize: "9px" }}>İstatistik</span>
             </button>
-            <button onClick={() => setActiveTab("denemeler")} style={{ background: activeTab === "denemeler" ? "#38BDF8" : "transparent", color: activeTab === "denemeler" ? "#090D16" : colorMain, border: "none", borderRadius: "14px", padding: "10px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1, transition: "all 0.2s ease" }}>
-              <span style={{ fontSize: "16px" }}>📈</span>
-              <span style={{ fontSize: "10px" }}>Deneme</span>
+            <button onClick={() => setActiveTab("konular")} style={{ background: activeTab === "konular" ? "#38BDF8" : "transparent", color: activeTab === "konular" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 6px", fontWeight: 800, cursor: "pointer", fontSize: "11px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1 }}>
+              <span style={{ fontSize: "15px" }}>📚</span>
+              <span style={{ fontSize: "9px" }}>Konular</span>
+            </button>
+            <button onClick={() => setActiveTab("denemeler")} style={{ background: activeTab === "denemeler" ? "#38BDF8" : "transparent", color: activeTab === "denemeler" ? "#090D16" : colorMain, border: "none", borderRadius: "12px", padding: "8px 6px", fontWeight: 800, cursor: "pointer", fontSize: "11px", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flex: 1 }}>
+              <span style={{ fontSize: "15px" }}>📈</span>
+              <span style={{ fontSize: "9px" }}>Deneme</span>
             </button>
           </div>
 
