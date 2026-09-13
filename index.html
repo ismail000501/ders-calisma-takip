@@ -145,6 +145,25 @@
       const examRemainingAtPauseRef = useRef(135 * 60);
       const examTickRef = useRef(null);
 
+      // KPSS Sınavına Kalan Gün Hesaplama (Örn: 2026 Ön Lisans veya Ortaöğretim / Gelecek Hedef)
+      const [kpssDaysLeft, setKpssDaysLeft] = useState(0);
+
+      useEffect(() => {
+        // Hedef ÖSYM Sınav Tarihi (Örn: 2026 KPSS Ön Lisans: 4 Ekim 2026 veya Ortaöğretim: 25 Ekim 2026)
+        const targetDate = new Date("2026-10-04T10:15:00");
+        const updateKpssTimer = () => {
+          const now = new Date();
+          const diff = targetDate - now;
+          if (diff > 0) {
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            setKpssDaysLeft(days);
+          } else {
+            setKpssDaysLeft(0);
+          }
+        };
+        updateKpssTimer();
+      }, []);
+
       // Hedefler
       const [targetStudyMins, setTargetStudyMins] = useState(180);
       const [targetParagraphs, setTargetParagraphs] = useState(50);
@@ -259,7 +278,7 @@
         try { localStorage.setItem("study-target-p-v2", String(v)); } catch (e) {}
       };
 
-      // 1. Ders Kronometre
+      // 1. Ders Kronometre (Arka planda asla şaşmaz)
       useEffect(() => {
         if (isRunning) {
           startTimeRef.current = Date.now();
@@ -275,7 +294,7 @@
         return () => { if (tickRef.current) clearInterval(tickRef.current); };
       }, [isRunning]);
 
-      // 2. Pomodoro
+      // 2. Pomodoro (Arka planda asla şaşmaz)
       useEffect(() => {
         if (isPomoRunning) {
           pomoEndTimeRef.current = Date.now() + (pomoRemainingAtPauseRef.current * 1000);
@@ -298,7 +317,7 @@
         return () => { if (pomoTickRef.current) clearInterval(pomoTickRef.current); };
       }, [isPomoRunning]);
 
-      // 3. Paragraf Kronometre
+      // 3. Paragraf Kronometre (Arka planda asla şaşmaz)
       useEffect(() => {
         if (pIsRunning) {
           pStartTimeRef.current = Date.now();
@@ -314,7 +333,7 @@
         return () => { if (pTickRef.current) clearInterval(pTickRef.current); };
       }, [pIsRunning]);
 
-      // 4. Deneme Geri Sayım Kronometresi
+      // 4. Deneme Geri Sayım Kronometresi (Arka planda asla şaşmaz)
       useEffect(() => {
         if (isExamRunning) {
           examEndTimeRef.current = Date.now() + (examRemainingAtPauseRef.current * 1000);
@@ -527,6 +546,25 @@
       const todayParagraphMinutes = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + s.minutes, 0);
       const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
 
+      // Çalışma Serisi (Streak) Hesaplama
+      const streakCount = useMemo(() => {
+        if (!sessions || sessions.length === 0) return 0;
+        let streak = 0;
+        const dateObj = new Date();
+        for (let i = 0; i < 60; i++) {
+          const dStr = isoDay(dateObj);
+          const hasStudied = sessions.some(s => s && s.date === dStr && (Number(s.minutes) || 0) > 0);
+          if (hasStudied) {
+            streak++;
+          } else if (i > 0) {
+            // Bugün henüz çalışmadıysa dünden saymaya devam etsin diye ilk gün hariç kırılır
+            break;
+          }
+          dateObj.setDate(dateObj.getDate() - 1);
+        }
+        return streak;
+      }, [sessions]);
+
       const filteredSessions = useMemo(() => {
         if (!filterDate) return sessions;
         return sessions.filter(s => s.date === filterDate);
@@ -599,6 +637,18 @@
           position: "relative"
         }}>
           
+          {/* ÜST BİLGİ BANDI: KPSS SINAV SAYACI & ÇALIŞMA SERİSİ (STREAK) */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" }}>
+            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", textAlign: "center" }}>
+              <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 2px", fontWeight: 600 }}>⏳ KPSS'YE KALAN</p>
+              <p style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#F59E0B" }}>{kpssDaysLeft} Gün</p>
+            </div>
+            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", textAlign: "center" }}>
+              <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 2px", fontWeight: 600 }}>🔥 ÇALIŞMA SERİSİ</p>
+              <p style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#38BDF8" }}>{streakCount} Günlük Seri</p>
+            </div>
+          </div>
+
           {/* SAĞ ÜST HAMBURGER MENÜ (3 ÇİZGİ) */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px", position: "relative" }}>
             <button 
@@ -828,7 +878,7 @@
           )}
 
 
-          {/* 2. İSTATİSTİKLER SEKMESİ (HATASIZ VE GÜVENLİ) */}
+          {/* 2. İSTATİSTİKLER SEKMESİ */}
           {activeTab === "istatistik" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
