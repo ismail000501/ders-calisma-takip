@@ -22,6 +22,14 @@
       touch-action: manipulation;
       -webkit-text-size-adjust: 100%;
     }
+    @keyframes pulseAlert {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.02); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .exam-danger {
+      animation: pulseAlert 1s infinite;
+    }
   </style>
 </head>
 <body>
@@ -97,6 +105,7 @@
       const [sessions, setSessions] = useState([]);
       const [exams, setExams] = useState([]);
       const [topics, setTopics] = useState({});
+      const [topicMinutes, setTopicMinutes] = useState({});
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [mode, setMode] = useState("kronometre");
@@ -128,8 +137,8 @@
       const pAccumulatedTimeRef = useRef(0);
       const pTickRef = useRef(null);
 
-      // Deneme Geri Sayım State'leri (Süre Sınırı)
-      const [examDurationMins, setExamDurationMins] = useState(135); // Varsayılan 135 dk (TYT)
+      // Deneme Geri Sayım State'leri (Süreyle Yarışma Havası)
+      const [examDurationMins, setExamDurationMins] = useState(135);
       const [examSecondsLeft, setExamSecondsLeft] = useState(135 * 60);
       const [isExamRunning, setIsExamRunning] = useState(false);
       const [examTimerName, setExamTimerName] = useState("");
@@ -165,21 +174,24 @@
             if (e) setExams(JSON.parse(e));
           } catch (e) {}
           try {
-            const tp = localStorage.getItem("study-topics-v2");
+            const tm = localStorage.getItem("study-topic-mins-v1");
+            if (tm) setTopicMinutes(JSON.parse(tm));
+          } catch (e) {}
+          try {
+            const tp = localStorage.getItem("study-topics-v3");
             if (tp) {
               setTopics(JSON.parse(tp));
             } else {
-              // İlk açılışta KPSS varsayılan konularını otomatik yükle
               const initialMap = {};
               DEFAULT_SUBJECTS.forEach(sub => {
                 initialMap[sub] = KPSS_TOPICS_DEFAULT[sub].map((tName, idx) => ({
-                  id: Date.now() + idx + Math.random(),
+                  id: "t_" + sub + "_" + idx,
                   name: tName,
                   completed: false
                 }));
               });
               setTopics(initialMap);
-              localStorage.setItem("study-topics-v2", JSON.stringify(initialMap));
+              localStorage.setItem("study-topics-v3", JSON.stringify(initialMap));
             }
           } catch (e) {}
           try {
@@ -194,7 +206,6 @@
         })();
       }, []);
 
-      // Sayaçtaki aktif ders adına göre Konular sekmesindeki aktif dersi akıllıca analiz edip eşleştir
       useEffect(() => {
         if (subject.trim()) {
           const matched = DEFAULT_SUBJECTS.find(s => subject.toLowerCase().includes(s.toLowerCase()));
@@ -223,8 +234,19 @@
 
       const saveTopics = useCallback((next) => {
         setTopics(next);
-        try { localStorage.setItem("study-topics-v2", JSON.stringify(next)); } catch (e) {}
+        try { localStorage.setItem("study-topics-v3", JSON.stringify(next)); } catch (e) {}
       }, []);
+
+      const saveTopicMinutes = useCallback((next) => {
+        setTopicMinutes(next);
+        try { localStorage.setItem("study-topic-mins-v1", JSON.stringify(next)); } catch (e) {}
+      }, []);
+
+      const updateTopicMinutesValue = (topicKey, value) => {
+        const mins = Math.max(0, Number(value) || 0);
+        const nextMap = { ...topicMinutes, [topicKey]: mins };
+        saveTopicMinutes(nextMap);
+      };
 
       const updateTargetMins = (val) => {
         const v = Math.max(10, val);
@@ -293,7 +315,7 @@
         return () => { if (pTickRef.current) clearInterval(pTickRef.current); };
       }, [pIsRunning]);
 
-      // 4. Deneme Geri Sayım Kronometresi (Arka planda asla şaşmaz)
+      // 4. Deneme Geri Sayım Kronometresi (Süreyle Yarışma Havası - Arka planda asla şaşmaz)
       useEffect(() => {
         if (isExamRunning) {
           examEndTimeRef.current = Date.now() + (examRemainingAtPauseRef.current * 1000);
@@ -304,7 +326,7 @@
               setIsExamRunning(false);
               setExamSecondsLeft(0);
               examRemainingAtPauseRef.current = 0;
-              alert("Sınav / Deneme süresi doldu! Geçmiş olsun.");
+              alert("SÜRE BİTTİ! ÖSYM sınav salonu kapandı, kağıtlar toplandı!");
             } else {
               setExamSecondsLeft(leftSecs);
             }
@@ -429,7 +451,7 @@
         e.preventDefault();
         if (!newTopicName.trim()) return;
         const list = topics[activeTopicSubj] || [];
-        const nextList = [...list, { id: Date.now(), name: newTopicName.trim(), completed: false }];
+        const nextList = [...list, { id: "custom_" + Date.now(), name: newTopicName.trim(), completed: false }];
         saveTopics({ ...topics, [activeTopicSubj]: nextList });
         setNewTopicName("");
       };
@@ -467,7 +489,7 @@
       };
 
       const exportData = () => {
-        const data = { sessions, exams, topics, targetStudyMins, targetParagraphs };
+        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -487,6 +509,7 @@
             if (data.sessions) saveSessions(data.sessions);
             if (data.exams) saveExams(data.exams);
             if (data.topics) saveTopics(data.topics);
+            if (data.topicMinutes) saveTopicMinutes(data.topicMinutes);
             if (data.targetStudyMins) updateTargetMins(data.targetStudyMins);
             if (data.targetParagraphs) updateTargetParagraphs(data.targetParagraphs);
             alert("Yedek başarıyla yüklendi!");
@@ -535,6 +558,15 @@
 
       const weekMinutes = weekData.reduce((a, d) => a + d.dakika, 0);
       const maxWeekMin = Math.max(1, ...weekData.map(d => d.dakika));
+
+      const activeSubjectTotalMins = useMemo(() => {
+        const list = topics[activeTopicSubj] || [];
+        return list.reduce((acc, t) => acc + (topicMinutes[`${activeTopicSubj}_${t.id}`] || 0), 0);
+      }, [topics, topicMinutes, activeTopicSubj]);
+
+      // Sınavda son 5 dakika kala tehlike rengi ve uyarı havası
+      const isExamCritical = examSecondsLeft <= 300 && examSecondsLeft > 0;
+      const examClockColor = isExamCritical ? "#F43F5E" : "#F59E0B";
 
       const isDark = theme === "dark";
       const bgMain = isDark ? "#0B0F19" : "#F8FAFC";
@@ -832,10 +864,9 @@
           )}
 
 
-          {/* 3. KONULAR SEKMESİ (KPSS ANALİZLİ) */}
+          {/* 3. KONULAR SEKMESİ */}
           {activeTab === "konular" && (
             <div>
-              {/* Ders Seçici Sekmeleri (Sayaçtan otomatik analiz edilir veya elle seçilir) */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 10px", fontWeight: 600 }}>KPSS / ÖSYM Ders Analizi</p>
                 <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
@@ -847,9 +878,14 @@
                 </div>
               </div>
 
-              {/* Aktif Dersin Konu Ekleme ve Yüzdelik Analiz Alanı */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "15px", fontWeight: 700, margin: "0 0 14px", color: "#38BDF8" }}>📚 {activeTopicSubj} Konu Analizi</p>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
+                  <p style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "#38BDF8" }}>📚 {activeTopicSubj} Konu Analizi</p>
+                  <div style={{ background: bgInner, border: `1px solid ${borderCard}`, padding: "6px 12px", borderRadius: "8px" }}>
+                    <span style={{ fontSize: "12px", color: textMuted }}>Toplam Süre: </span>
+                    <strong style={{ fontSize: "13px", color: "#2DD4BF" }}>{formatMinutes(activeSubjectTotalMins)}</strong>
+                  </div>
+                </div>
                 
                 <form onSubmit={handleAddTopic} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
                   <input placeholder="Yeni konu ekle (örn. Özel Konu)" value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} style={{ flex: 1, padding: "12px 14px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
@@ -871,16 +907,30 @@
                       </div>
 
                       {list.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Bu derse ait henüz konu yok.</p>}
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {list.map(t => (
-                          <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderCard}` }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", cursor: "pointer", textDecoration: t.completed ? "line-through" : "none", color: t.completed ? textMuted : colorMain }}>
-                              <input type="checkbox" checked={t.completed} onChange={() => toggleTopic(activeTopicSubj, t.id)} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
-                              {t.name}
-                            </label>
-                            <button onClick={() => deleteTopic(activeTopicSubj, t.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Sil</button>
-                          </div>
-                        ))}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {list.map(t => {
+                          const topicKey = `${activeTopicSubj}_${t.id}`;
+                          const currentMins = topicMinutes[topicKey] || 0;
+                          return (
+                            <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "10px 12px", borderRadius: "10px", border: `1px solid ${borderCard}`, flexWrap: "wrap", gap: "8px" }}>
+                              <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", cursor: "pointer", textDecoration: t.completed ? "line-through" : "none", color: t.completed ? textMuted : colorMain, flex: 1, minWidth: "150px" }}>
+                                <input type="checkbox" checked={t.completed} onChange={() => toggleTopic(activeTopicSubj, t.id)} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
+                                {t.name}
+                              </label>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <input 
+                                  type="number" 
+                                  value={currentMins === 0 ? "" : currentMins} 
+                                  placeholder="0" 
+                                  onChange={(e) => updateTopicMinutesValue(topicKey, e.target.value)} 
+                                  style={{ width: "56px", background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "6px", padding: "4px 6px", fontSize: "12px", textAlign: "center" }} 
+                                />
+                                <span style={{ fontSize: "11px", color: textMuted }}>dk</span>
+                                <button onClick={() => deleteTopic(activeTopicSubj, t.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold", marginLeft: "4px" }}>Sil</button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -890,35 +940,39 @@
           )}
 
 
-          {/* 4. DENEMELER SEKMESİ (GERİ SAYIM SÜRE SINIRI + NET TAKİBİ) */}
+          {/* 4. DENEMELER SEKMESİ (ÖSYM / KPSS SÜREYLE YARIŞMA AMİRAL GEMİSİ) */}
           {activeTab === "denemeler" && (
             <div>
-              {/* Denemeler Sekmesine Özel Türkiye Şartlarında Geri Sayım Kronometresi */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px", textAlign: "center" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>DENEME / SINAV GERİ SAYIMI</p>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "20px", marginBottom: "20px", textAlign: "center" }}>
+                <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 6px", fontWeight: 700, letterSpacing: "1px" }}> ÖSYM SINAV SALONU SÜREÇ YÖNETİMİ</p>
                 
-                {/* Süre Sınırı Butonları */}
-                <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "10px 0 14px" }}>
+                {/* Sınav Süresi Seçenekleri */}
+                <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "12px 0 16px" }}>
                   {[100, 135, 150, 180].map((mins) => (
-                    <button key={mins} onClick={() => selectExamDuration(mins)} style={{ background: examDurationMins === mins ? "#F59E0B" : bgInner, color: examDurationMins === mins ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 10px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}>
+                    <button key={mins} onClick={() => selectExamDuration(mins)} style={{ background: examDurationMins === mins ? examClockColor : bgInner, color: examDurationMins === mins ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 12px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}>
                       {mins} dk
                     </button>
                   ))}
                 </div>
 
-                <div style={{ margin: "10px 0", fontSize: "40px", fontWeight: "bold", fontFamily: "serif", color: "#F59E0B" }}>
+                {/* Geri Sayım Saat Göstergesi (Kritik Dakikalarda Yanıp Sönen Efekt) */}
+                <div className={isExamCritical ? "exam-danger" : ""} style={{ margin: "15px 0", fontSize: "46px", fontWeight: "bold", fontFamily: "serif", color: examClockColor, textShadow: isExamCritical ? "0 0 15px rgba(244,63,94,0.4)" : "none" }}>
                   {formatClock(examSecondsLeft)}
                 </div>
+
+                {isExamCritical && (
+                  <p style={{ fontSize: "12px", color: "#F43F5E", fontWeight: 700, margin: "0 0 10px" }}>⚠️ DİKKAT! SINAVIN SON DAKİKALARI, KODLAMAYI UNUTMA!</p>
+                )}
                 
-                <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "12px" }}>
-                  <input placeholder="Sınav Adı (örn. KPSS Genel Yetenek-Kültür Deneme)" value={examTimerName} onChange={(e) => setExamTimerName(e.target.value)} disabled={isExamRunning} style={{ width: "100%", maxWidth: "300px", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "13px" }} />
+                <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "14px" }}>
+                  <input placeholder="Deneme Sınavı Adı (örn. KPSS GY-GK Deneme)" value={examTimerName} onChange={(e) => setExamTimerName(e.target.value)} disabled={isExamRunning} style={{ width: "100%", maxWidth: "300px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "13px" }} />
                 </div>
                 
                 <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
-                  <button onClick={() => setIsExamRunning(!isExamRunning)} style={{ background: "#F59E0B", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
-                    {isExamRunning ? "Duraklat" : "Sınavı Başlat"}
+                  <button onClick={() => setIsExamRunning(!isExamRunning)} style={{ background: isExamRunning ? "#F43F5E" : "#F59E0B", color: "#0B0F19", borderRadius: "10px", padding: "12px 24px", border: "none", fontWeight: 700, cursor: "pointer", fontSize: "14px" }}>
+                    {isExamRunning ? "Sınavı Duraklat" : "🔥 Sınavı Başlat (Süreyle Yarış)"}
                   </button>
-                  <button onClick={() => { setIsExamRunning(false); setExamSecondsLeft(examDurationMins * 60); examRemainingAtPauseRef.current = examDurationMins * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "13px" }}>
+                  <button onClick={() => { setIsExamRunning(false); setExamSecondsLeft(examDurationMins * 60); examRemainingAtPauseRef.current = examDurationMins * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 16px", cursor: "pointer", fontSize: "13px" }}>
                     Sıfırla
                   </button>
                 </div>
