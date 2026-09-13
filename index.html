@@ -31,7 +31,49 @@
     const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-    const DEFAULT_SUBJECTS = ["Matematik", "Türkçe", "Fizik", "Kimya", "Biyoloji", "Tarih", "Coğrafya"];
+    
+    // KPSS ve ÖSYM Kapsamlı Tüm Dersler ve Konuları
+    const KPSS_TOPICS_DEFAULT = {
+      "Türkçe": [
+        "Sözcükte Anlam", "Cümlede Anlam", "Paragraf ve Anlatım Biçimleri", "Ses Bilgisi", 
+        "Yazım Kuralları", "Noktalama İşaretleri", "Sözcük Yapısı / Ekler", "İsimler", 
+        "Sıfatlar", "Zamirler", "Zarflar", "Edat - Bağlaç - Ünlem", "Fiiller ve Fiilimsiler", 
+        "Cümlenin Ögeleri", "Cümle Çeşitleri", "Anlatım Bozuklukları"
+      ],
+      "Matematik": [
+        "Temel Kavramlar", "Sayı Basamakları", "Bölme ve Bölünebilme", "Aslak Çarpanlar / EBOB-EKOK", 
+        "Rasyonel Sayılar", "Ondalık Sayılar", "Basit Eşitsizlikler", "Mutlak Değer", 
+        "Üslü Sayılar", "Köklü Sayılar", "Çarpanlara Ayırma", "Oran ve Orantı", 
+        "Denklem Çözme", "Problemler (Sayı, Kesir, Yaş)", "Problemler (İşçi, Havuz, Yüzde)", 
+        "Problemler (Kar-Zarar, Faiz, Karışım)", "Kümeler", "Fonksiyonlar", "İşlem ve Modüler Aritmetik", 
+        "Olasılık", "Permütasyon - Kombinasyon", "İstatistik"
+      ],
+      "Tarih": [
+        "İslamiyet Öncesi Türk Tarihi", "İlk Türk - İslam Devletleri", "Osmanlı Devleti Siyasi Tarih", 
+        "Osmanlı Kültür ve Medeniyeti", "XIX. Yüzyılda Osmanlı Devleti", "XX. Yüzyılda Osmanlı Devleti", 
+        "I. Dünya Savaşı ve Sonrası Gelişmeler", "Milli Mücadele Hazırlık Dönemi", 
+        "Kurtuluş Savaşı Suriye/Doğu/Güney Cepheleri", "I. TBMM Dönemi ve Ayaklanmalar", 
+        "Kurtuluş Savaşı Muharebeler Dönemi ve Lozan", "Atatürk İlkeleri ve İnkılapları", 
+        "Atatürk Dönemi Türk Dış Politikası", "Çağdaş Türk ve Dünya Tarihi"
+      ],
+      "Coğrafya": [
+        "Türkiye'nin Coğrafi Konumu", "Türkiye'nin Yer Şekilleri ve Dağları", "Türkiye'nin İklimi ve Bitki Örtüsü", 
+        "Türkiye'nin Su Varlığı (Akarsular, Göller)", "Türkiye'de Toprak Tipleri ve Erozyon", 
+        "Türkiye'de Nüfus ve Yerleşme", "Türkiye'de Tarım ve Hayvancılık", "Türkiye'de Madenler ve Enerji Kaynakları", 
+        "Türkiye'de Sanayi ve Ulaşım", "Türkiye'nin Ticareti ve Turizmi", "Bölgesel Coğrafya ve Kalkınma Projeleri"
+      ],
+      "Vatandaşlık": [
+        "Hukukun Temel Kavramları", "Devlet Biçimleri ve Demokrasi", "1982 Anayasası'nın Temel İlkeleri", 
+        "Yasama (TBMM)", "Yürürlük (Cumhurbaşkanı ve Bakanlar)", "Yargı (Yüksek Mahkemeler)", 
+        "İdare Hukuku ve Mahalli İdareler"
+      ],
+      "Eğitim Bilimleri": [
+        "Eğitim Psikolojisi / Gelişim", "Öğrenme Psikolojisi", "Rehberlik ve Özel Eğitim", 
+        "Öğretim İlke ve Yöntemleri", "Sınıf Yönetimi", "Ölçme ve Değerlendirme", "Program Geliştirme"
+      ]
+    };
+
+    const DEFAULT_SUBJECTS = Object.keys(KPSS_TOPICS_DEFAULT);
 
     function pad(n) { return String(n).padStart(2, "0"); }
     function formatClock(totalSeconds) {
@@ -86,12 +128,21 @@
       const pAccumulatedTimeRef = useRef(0);
       const pTickRef = useRef(null);
 
+      // Deneme Geri Sayım State'leri (Süre Sınırı)
+      const [examDurationMins, setExamDurationMins] = useState(135); // Varsayılan 135 dk (TYT)
+      const [examSecondsLeft, setExamSecondsLeft] = useState(135 * 60);
+      const [isExamRunning, setIsExamRunning] = useState(false);
+      const [examTimerName, setExamTimerName] = useState("");
+      const examEndTimeRef = useRef(null);
+      const examRemainingAtPauseRef = useRef(135 * 60);
+      const examTickRef = useRef(null);
+
       // Hedefler
       const [targetStudyMins, setTargetStudyMins] = useState(180);
       const [targetParagraphs, setTargetParagraphs] = useState(50);
 
-      // Konu ve Deneme State'leri
-      const [activeTopicSubj, setActiveTopicSubj] = useState("Matematik");
+      // Konu ve Deneme Net State'leri
+      const [activeTopicSubj, setActiveTopicSubj] = useState("Türkçe");
       const [newTopicName, setNewTopicName] = useState("");
       const [examName, setExamName] = useState("");
       const [examNetTr, setExamNetTr] = useState("");
@@ -114,8 +165,22 @@
             if (e) setExams(JSON.parse(e));
           } catch (e) {}
           try {
-            const tp = localStorage.getItem("study-topics-v1");
-            if (tp) setTopics(JSON.parse(tp));
+            const tp = localStorage.getItem("study-topics-v2");
+            if (tp) {
+              setTopics(JSON.parse(tp));
+            } else {
+              // İlk açılışta KPSS varsayılan konularını otomatik yükle
+              const initialMap = {};
+              DEFAULT_SUBJECTS.forEach(sub => {
+                initialMap[sub] = KPSS_TOPICS_DEFAULT[sub].map((tName, idx) => ({
+                  id: Date.now() + idx + Math.random(),
+                  name: tName,
+                  completed: false
+                }));
+              });
+              setTopics(initialMap);
+              localStorage.setItem("study-topics-v2", JSON.stringify(initialMap));
+            }
           } catch (e) {}
           try {
             const ts = localStorage.getItem("study-target-mins-v2");
@@ -129,7 +194,7 @@
         })();
       }, []);
 
-      // Sayaçtaki aktif ders adına göre Konular sekmesindeki aktif dersi otomatik güncelle
+      // Sayaçtaki aktif ders adına göre Konular sekmesindeki aktif dersi akıllıca analiz edip eşleştir
       useEffect(() => {
         if (subject.trim()) {
           const matched = DEFAULT_SUBJECTS.find(s => subject.toLowerCase().includes(s.toLowerCase()));
@@ -158,7 +223,7 @@
 
       const saveTopics = useCallback((next) => {
         setTopics(next);
-        try { localStorage.setItem("study-topics-v1", JSON.stringify(next)); } catch (e) {}
+        try { localStorage.setItem("study-topics-v2", JSON.stringify(next)); } catch (e) {}
       }, []);
 
       const updateTargetMins = (val) => {
@@ -227,6 +292,36 @@
         }
         return () => { if (pTickRef.current) clearInterval(pTickRef.current); };
       }, [pIsRunning]);
+
+      // 4. Deneme Geri Sayım Kronometresi (Arka planda asla şaşmaz)
+      useEffect(() => {
+        if (isExamRunning) {
+          examEndTimeRef.current = Date.now() + (examRemainingAtPauseRef.current * 1000);
+          examTickRef.current = setInterval(() => {
+            const now = Date.now();
+            const leftSecs = Math.ceil((examEndTimeRef.current - now) / 1000);
+            if (leftSecs <= 0) {
+              setIsExamRunning(false);
+              setExamSecondsLeft(0);
+              examRemainingAtPauseRef.current = 0;
+              alert("Sınav / Deneme süresi doldu! Geçmiş olsun.");
+            } else {
+              setExamSecondsLeft(leftSecs);
+            }
+          }, 200);
+        } else {
+          if (examTickRef.current) clearInterval(examTickRef.current);
+          examRemainingAtPauseRef.current = examSecondsLeft;
+        }
+        return () => { if (examTickRef.current) clearInterval(examTickRef.current); };
+      }, [isExamRunning]);
+
+      const selectExamDuration = (mins) => {
+        setIsExamRunning(false);
+        setExamDurationMins(mins);
+        setExamSecondsLeft(mins * 60);
+        examRemainingAtPauseRef.current = mins * 60;
+      };
 
       const handleStartPause = () => {
         if (!isRunning && !subject.trim()) return;
@@ -520,7 +615,7 @@
           {/* 1. SAYAÇ SEKMESİ */}
           {activeTab === "sayac" && (
             <div>
-              {/* GÜNLÜK HEDEF VE AYARlar */}
+              {/* GÜNLÜK HEDEF VE AYARLAR */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 600, color: textMuted }}>🎯 Günlük Hedefler ve İlerleme</span>
@@ -565,7 +660,7 @@
                     {formatClock(elapsed)}
                   </div>
                   <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px" }}>
-                    <input placeholder="Ne çalışıyorsun? (örn. Matematik)" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={isRunning} style={{ width: "100%", maxWidth: "300px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
+                    <input placeholder="Ne çalışıyorsun? (örn. Matematik, Tarih)" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={isRunning} style={{ width: "100%", maxWidth: "300px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
                   </div>
                   <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
                     <button onClick={handleStartPause} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "10px", padding: "12px 22px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "14px" }}>
@@ -599,7 +694,7 @@
                   </div>
 
                   <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px" }}>
-                    <input placeholder="Pomodoro Dersi (örn. Fizik)" value={pomoSubject} onChange={(e) => setPomoSubject(e.target.value)} disabled={isPomoRunning} style={{ width: "100%", maxWidth: "300px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
+                    <input placeholder="Pomodoro Dersi (örn. Vatandaşlık)" value={pomoSubject} onChange={(e) => setPomoSubject(e.target.value)} disabled={isPomoRunning} style={{ width: "100%", maxWidth: "300px", padding: "12px 14px", borderRadius: "10px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "14px" }} />
                   </div>
 
                   <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
@@ -737,12 +832,12 @@
           )}
 
 
-          {/* 3. KONULAR SEKMESİ (AKILLI DERS ANALİZLİ) */}
+          {/* 3. KONULAR SEKMESİ (KPSS ANALİZLİ) */}
           {activeTab === "konular" && (
             <div>
-              {/* Ders Seçici Sekmeleri (Sayaçta girilen derse göre otomatik odaklanır) */}
+              {/* Ders Seçici Sekmeleri (Sayaçtan otomatik analiz edilir veya elle seçilir) */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 10px", fontWeight: 600 }}>Ders Seçimi</p>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 10px", fontWeight: 600 }}>KPSS / ÖSYM Ders Analizi</p>
                 <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
                   {DEFAULT_SUBJECTS.map((s) => (
                     <button key={s} onClick={() => setActiveTopicSubj(s)} style={{ background: activeTopicSubj === s ? "#38BDF8" : bgInner, color: activeTopicSubj === s ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontWeight: 600, cursor: "pointer", fontSize: "12px", whiteSpace: "nowrap" }}>
@@ -752,12 +847,12 @@
                 </div>
               </div>
 
-              {/* Aktif Dersin Konu Ekleme ve Listeleme Alanı */}
+              {/* Aktif Dersin Konu Ekleme ve Yüzdelik Analiz Alanı */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "15px", fontWeight: 700, margin: "0 0 14px", color: "#38BDF8" }}>📚 {activeTopicSubj} Konuları</p>
+                <p style={{ fontSize: "15px", fontWeight: 700, margin: "0 0 14px", color: "#38BDF8" }}>📚 {activeTopicSubj} Konu Analizi</p>
                 
                 <form onSubmit={handleAddTopic} style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-                  <input placeholder="Yeni konu adı (örn. Türev)" value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} style={{ flex: 1, padding: "12px 14px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                  <input placeholder="Yeni konu ekle (örn. Özel Konu)" value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} style={{ flex: 1, padding: "12px 14px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
                   <button type="submit" style={{ background: "#38BDF8", color: "#0B0F19", border: "none", padding: "12px 18px", borderRadius: "10px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>Ekle</button>
                 </form>
 
@@ -768,14 +863,14 @@
                   return (
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <span style={{ fontSize: "12px", color: textMuted }}>İlerleme Durumu</span>
-                        <span style={{ fontSize: "12px", fontWeight: 600 }}>%{pct} ({completedCount}/{list.length})</span>
+                        <span style={{ fontSize: "12px", color: textMuted }}>Tamamlanma Yüzdesi</span>
+                        <span style={{ fontSize: "12px", fontWeight: 600, color: "#2DD4BF" }}>%{pct} ({completedCount}/{list.length} Konu Bitti)</span>
                       </div>
                       <div style={{ width: "100%", background: bgInner, height: "8px", borderRadius: "4px", overflow: "hidden", marginBottom: "16px" }}>
-                        <div style={{ width: `${pct}%`, background: "#38BDF8", height: "100%", transition: "width 0.3s ease" }}></div>
+                        <div style={{ width: `${pct}%`, background: "#2DD4BF", height: "100%", transition: "width 0.3s ease" }}></div>
                       </div>
 
-                      {list.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Bu derse ait henüz konu eklenmemiş.</p>}
+                      {list.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Bu derse ait henüz konu yok.</p>}
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         {list.map(t => (
                           <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "10px 14px", borderRadius: "10px", border: `1px solid ${borderCard}` }}>
@@ -795,26 +890,35 @@
           )}
 
 
-          {/* 4. DENEMELER SEKMESİ (KRONOMETRE + NET TAKİBİ) */}
+          {/* 4. DENEMELER SEKMESİ (GERİ SAYIM SÜRE SINIRI + NET TAKİBİ) */}
           {activeTab === "denemeler" && (
             <div>
-              {/* Denemeler Sekmesine Özel Entegre Sayaç */}
+              {/* Denemeler Sekmesine Özel Türkiye Şartlarında Geri Sayım Kronometresi */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px", textAlign: "center" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>DENEME / SINAV KRONOMETRESİ</p>
-                <div style={{ margin: "10px 0", fontSize: "36px", fontWeight: "bold", fontFamily: "serif" }}>
-                  {formatClock(elapsed)}
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>DENEME / SINAV GERİ SAYIMI</p>
+                
+                {/* Süre Sınırı Butonları */}
+                <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "10px 0 14px" }}>
+                  {[100, 135, 150, 180].map((mins) => (
+                    <button key={mins} onClick={() => selectExamDuration(mins)} style={{ background: examDurationMins === mins ? "#F59E0B" : bgInner, color: examDurationMins === mins ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "6px 10px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}>
+                      {mins} dk
+                    </button>
+                  ))}
                 </div>
+
+                <div style={{ margin: "10px 0", fontSize: "40px", fontWeight: "bold", fontFamily: "serif", color: "#F59E0B" }}>
+                  {formatClock(examSecondsLeft)}
+                </div>
+                
                 <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "12px" }}>
-                  <input placeholder="Sınav Adı (örn. TYT Matematik Denemesi)" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={isRunning} style={{ width: "100%", maxWidth: "280px", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "13px" }} />
+                  <input placeholder="Sınav Adı (örn. KPSS Genel Yetenek-Kültür Deneme)" value={examTimerName} onChange={(e) => setExamTimerName(e.target.value)} disabled={isExamRunning} style={{ width: "100%", maxWidth: "300px", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${borderCard}`, background: bgInner, color: colorMain, fontSize: "13px" }} />
                 </div>
+                
                 <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
-                  <button onClick={handleStartPause} style={{ background: "#38BDF8", color: "#0B0F19", borderRadius: "8px", padding: "10px 18px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
-                    {isRunning ? "Duraklat" : "Başla"}
+                  <button onClick={() => setIsExamRunning(!isExamRunning)} style={{ background: "#F59E0B", color: "#0B0F19", borderRadius: "8px", padding: "10px 20px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
+                    {isExamRunning ? "Duraklat" : "Sınavı Başlat"}
                   </button>
-                  <button onClick={handleFinish} style={{ background: "#2DD4BF", color: "#0B0F19", borderRadius: "8px", padding: "10px 18px", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>
-                    Bitir ve Kaydet
-                  </button>
-                  <button onClick={handleReset} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 12px", cursor: "pointer", fontSize: "13px" }}>
+                  <button onClick={() => { setIsExamRunning(false); setExamSecondsLeft(examDurationMins * 60); examRemainingAtPauseRef.current = examDurationMins * 60; }} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 14px", cursor: "pointer", fontSize: "13px" }}>
                     Sıfırla
                   </button>
                 </div>
@@ -822,14 +926,14 @@
 
               {/* Net Giriş Kartı */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 12px" }}>📈 Yeni Deneme Sınavı Ekle</p>
+                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 12px" }}>📈 Yeni Deneme Sonucu Ekle</p>
                 <form onSubmit={handleAddExam} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <input placeholder="Deneme Adı (örn. TYT Genel Deneme 1)" value={examName} onChange={(e) => setExamName(e.target.value)} style={{ padding: "12px 14px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                  <input placeholder="Deneme Adı (örn. ÖSYM Çıkmış Sorular Deneme)" value={examName} onChange={(e) => setExamName(e.target.value)} style={{ padding: "12px 14px", borderRadius: "10px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                     <input placeholder="Türkçe Net" type="number" step="0.25" value={examNetTr} onChange={(e) => setExamNetTr(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
                     <input placeholder="Matematik Net" type="number" step="0.25" value={examNetMat} onChange={(e) => setExamNetMat(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
-                    <input placeholder="Sosyal Net" type="number" step="0.25" value={examNetSos} onChange={(e) => setExamNetSos(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
-                    <input placeholder="Fen Net" type="number" step="0.25" value={examNetFen} onChange={(e) => setExamNetFen(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                    <input placeholder="Sosyal / Tarih Net" type="number" step="0.25" value={examNetSos} onChange={(e) => setExamNetSos(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                    <input placeholder="Fen / Vatandaşlık Net" type="number" step="0.25" value={examNetFen} onChange={(e) => setExamNetFen(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
                   </div>
                   <button type="submit" style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", padding: "12px", borderRadius: "10px", fontWeight: 600, cursor: "pointer", fontSize: "13px", marginTop: "4px" }}>Denemeyi Kaydet</button>
                 </form>
@@ -844,7 +948,7 @@
                     <div key={ex.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
                         <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 4px" }}>{ex.name} <span style={{ fontSize: "11px", color: textMuted }}>({ex.date})</span></p>
-                        <p style={{ fontSize: "12px", color: textMuted, margin: 0 }}>Toplam Net: <strong style={{ color: "#38BDF8" }}>{ex.total}</strong> (TR: {ex.tr} | Mat: {ex.mat} | Sos: {ex.sos} | Fen: {ex.fen})</p>
+                        <p style={{ fontSize: "12px", color: textMuted, margin: 0 }}>Toplam Net: <strong style={{ color: "#38BDF8" }}>{ex.total}</strong> (TR: {ex.tr} | Mat: {ex.mat} | Sos: {ex.sos} | Fen/Vat: {ex.fen})</p>
                       </div>
                       <button onClick={() => deleteExam(ex.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
                     </div>
