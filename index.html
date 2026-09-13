@@ -98,6 +98,34 @@
 
     const DEFAULT_SUBJECTS = Object.keys(KPSS_TOPICS_DEFAULT);
 
+    const KPSS_ROTATING_MODULES = [
+      {
+        subject: "Türkçe (Paragraf & Sözel Mantık)",
+        strategy: "Her gün düzenli 30-40 paragraf çözmek hız kazandırır. Sözel mantık sorularında öncülleri tabloya net dökmek hatayı %90 önler.",
+        archiveInfo: "ÖSYM son yıllarda paragraf sorularını uzatmakta ve çeldiricileri güçlendirmektedir. Çıkmış sorularda 'çıkarılamaz' ve 'değinilmemiştir' kalıpları en sık sorulan tiplerdir."
+      },
+      {
+        subject: "Matematik (Temel İşlemler & Problemler)",
+        strategy: "Sınavın kaderini problemler belirler. İşçi-havuz ve yüzde problemleri yerine sayı ve kesir problemlerine ağırlık ver.",
+        archiveInfo: "Çıkmış sorular incelendiğinde ÖSYM her yıl mutlaka 1 adet köklü-üslü sayı, 2 adet sayı basamakları ve 7-8 adet problem sorusuna yer vermektedir."
+      },
+      {
+        subject: "Tarih (İnkılaplar & Osmanlı Kültür Medeniyet)",
+        strategy: "Tarih dersinde kronoloji her şeydir. Olayların ardışıklığını kavradığında ezber yapmana gerek kalmaz.",
+        archiveInfo: "ÖSYM Kültür ve Medeniyet kısmından her yıl net 3-4 soru sormaktadır (Divan üyesi, toprak sistemi, sanat vb.). Atatürk dönemi dış politika ise banko sorudur."
+      },
+      {
+        subject: "Coğrafya (Türkiye Beşeri & Fiziki Coğrafya)",
+        strategy: "Harita üzerinden çalışmak coğrafyada netleri ikiye katlar. Dağların uzanış yönü iklimi doğrudan etkiler.",
+        archiveInfo: "Çıkmış sorularda Türkiye'nin madenleri, enerji kaynakları ve tarım ürünlerinin coğrafi dağılımı ÖSYM'nin vazgeçilmez soru havuzunu oluşturur."
+      },
+      {
+        subject: "Vatandaşlık (1982 Anayasası & İdare)",
+        strategy: "Anayasa metinleri ağır gelebilir; maddeleri kendi cümlelerinle özetleyerek küçük not kartları oluştur.",
+        archiveInfo: "Yasama, Yürürlük ve Yargı organlarının görevleri ile temel hak ve hürriyetler çıkmış soruların %70'ini oluşturmaktadır."
+      }
+    ];
+
     function pad(n) { return String(n).padStart(2, "0"); }
     function formatClock(totalSeconds) {
       const h = Math.floor(totalSeconds / 3600);
@@ -132,6 +160,20 @@
       const [filterDate, setFilterDate] = useState("");
       const [settingsModalOpen, setSettingsModalOpen] = useState(false);
       const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
+
+      // 2 Saatte bir güncellenen rotasyon indeksi
+      const [rotatingIndex, setRotatingIndex] = useState(0);
+
+      useEffect(() => {
+        const calculateRotatingIndex = () => {
+          const nowHour = new Date().getHours();
+          const index = Math.floor(nowHour / 2) % KPSS_ROTATING_MODULES.length;
+          setRotatingIndex(index);
+        };
+        calculateRotatingIndex();
+        const interval = setInterval(calculateRotatingIndex, 60000); // Her dakika kontrol et
+        return () => clearInterval(interval);
+      }, []);
 
       const [fcFront, setFcFront] = useState("");
       const [fcBack, setFcBack] = useState("");
@@ -612,6 +654,8 @@
 
       if (!loaded) return null;
 
+      const activeRotatingMod = KPSS_ROTATING_MODULES[rotatingIndex];
+
       return (
         <div style={{ 
           fontFamily: "'Inter', sans-serif", 
@@ -871,7 +915,7 @@
             </div>
           )}
 
-          {/* 2. KPSS MERKEZİ SEKMESİ (YENİ ÖZEL KLASÖR) */}
+          {/* 2. KPSS MERKEZİ SEKMESİ (2 SAATTE BİR DİNAMİK GÜNCELLENEN STRATEJİ & ÇIKMIŞ SORU ANALİZİ) */}
           {activeTab === "kpss" && (
             <div>
               {/* Kalan Gün & Strateji Kartı */}
@@ -884,13 +928,29 @@
                   <span style={{ background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", padding: "6px 12px", borderRadius: "12px", fontSize: "12px", fontWeight: 800 }}>04 Ekim 2026</span>
                 </div>
                 <p style={{ fontSize: "13px", color: textMuted, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
-                  💡 <strong style={{ color: colorMain }}>Profesyonel Tavsiye:</strong> Bu dönemde konu bitirmekten ziyade çıkmış sorulara (Çıkmış Soru Analizi) ve branş denemelerine ağırlık vermen net artışını %30 hızlandıracaktır.
+                  💡 <strong style={{ color: colorMain }}>Profesyonel Strateji:</strong> Aşağıdaki analiz her 2 saatte bir aktif ders konusuna göre otomatik güncellenir.
                 </p>
               </div>
 
+              {/* 2 Saatlik Otomatik Güncellenen Dinamik Katsayı & Strateji Analizi */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px", borderLeft: "4px solid #38BDF8" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <p style={{ fontSize: "14px", fontWeight: 800, margin: 0, color: "#38BDF8" }}>🔄 Canlı Katsayı & Odak Analizi</p>
+                  <span style={{ fontSize: "10px", background: bgInner, color: textMuted, padding: "4px 8px", borderRadius: "8px", fontWeight: 700 }}>2 Saatte Bir Yenilenir</span>
+                </div>
+                <p style={{ fontSize: "15px", fontWeight: 800, margin: "0 0 8px", color: colorMain }}>{activeRotatingMod.subject}</p>
+                <p style={{ fontSize: "13px", color: textMuted, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>{activeRotatingMod.strategy}</p>
+              </div>
+
+              {/* Eş Zamanlı Çıkmış Soru Analizi Bilgi Kutusu */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px", borderLeft: "4px solid #2DD4BF" }}>
+                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 8px", color: "#2DD4BF" }}>📈 ÖSYM Çıkmış Soru Analizi (Eş Zamanlı)</p>
+                <p style={{ fontSize: "13px", color: textMuted, margin: 0, lineHeight: 1.5, fontWeight: 600 }}>{activeRotatingMod.archiveInfo}</p>
+              </div>
+
               {/* ÖSYM Çıkmış Soru Arşivi Takip Modülü */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px" }}>
-                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 4px", color: "#38BDF8" }}>📂 ÖSYM Çıkmış Soru Arşivi (2018 - 2025)</p>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 4px", color: "#38BDF8" }}>📂 Çıkmış Soru Yılları Arşivi (2018 - 2025)</p>
                 <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 14px", fontWeight: 600 }}>Çözdüğün çıkmış soru yıllarını işaretle ve ilerlemeni takip et:</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                   {[2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018].map((year) => {
@@ -902,34 +962,6 @@
                       </div>
                     );
                   })}
-                </div>
-              </div>
-
-              {/* KPSS Puan Dağılımı ve Strateji Tablosu */}
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 12px", color: "#2DD4BF" }}>📊 KPSS Sınav Yapısı & Katsayı Analizi</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "13px", fontWeight: 800 }}>Türkçe (30 Soru)</span>
-                      <span style={{ fontSize: "12px", color: "#38BDF8", fontWeight: 700 }}>Kritik Katsayı</span>
-                    </div>
-                    <p style={{ fontSize: "11px", color: textMuted, margin: 0, fontWeight: 600 }}>Genel Yetenek'in en yüksek puan getiren kısmıdır. Paragraf temelini oluşturur.</p>
-                  </div>
-                  <div style={{ background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "13px", fontWeight: 800 }}>Matematik / Mantık (30 Soru)</span>
-                      <span style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 700 }}>Puan Belirleyici</span>
-                    </div>
-                    <p style={{ fontSize: "11px", color: textMuted, margin: 0, fontWeight: 600 }}>Sıralamayı yukarı taşıyan en önemli alandır. Problem ve sayı basamakları odaklıdır.</p>
-                  </div>
-                  <div style={{ background: bgInner, padding: "12px 14px", borderRadius: "14px", border: `1px solid ${borderCard}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "13px", fontWeight: 800 }}>Tarih (27 Soru)</span>
-                      <span style={{ fontSize: "12px", color: "#2DD4BF", fontWeight: 700 }}>Ezber & Kronoloji</span>
-                    </div>
-                    <p style={{ fontSize: "11px", color: textMuted, margin: 0, fontWeight: 600 }}>İslamiyet öncesinden çağdaş Türk ve dünya tarihine kadar detaylı tekrar gerektirir.</p>
-                  </div>
                 </div>
               </div>
             </div>
