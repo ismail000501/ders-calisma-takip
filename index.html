@@ -105,8 +105,8 @@
       const [exams, setExams] = useState([]);
       const [topics, setTopics] = useState({});
       const [topicMinutes, setTopicMinutes] = useState({});
-      const [dailyNotes, setDailyNotes] = useState({}); // { "YYYY-MM-DD": "not metni" }
-      const [wrongNotes, setWrongNotes] = useState([]); // [{ id, text, subject }]
+      const [dailyNotes, setDailyNotes] = useState({});
+      const [wrongNotes, setWrongNotes] = useState([]);
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
@@ -178,10 +178,9 @@
       const [examNetSos, setExamNetSos] = useState("");
       const [examNetFen, setExamNetFen] = useState("");
 
-      // Yeni eklenen Not state'leri
+      // Not state'leri
       const [currentNoteText, setCurrentNoteText] = useState("");
       const [newWrongText, setNewWrongText] = useState("");
-      const [newWrongSubj, setNewWrongSubj] = useState("Türkçe");
 
       useEffect(() => {
         (async () => {
@@ -292,7 +291,7 @@
       const handleAddWrongNote = (e) => {
         e.preventDefault();
         if (!newWrongText.trim()) return;
-        const item = { id: Date.now(), text: newWrongText.trim(), subject: newWrongSubj };
+        const item = { id: Date.now(), text: newWrongText.trim(), subject: activeTopicSubj };
         const nextList = [item, ...wrongNotes];
         setWrongNotes(nextList);
         try { localStorage.setItem("study-wrong-notes-v1", JSON.stringify(nextList)); } catch (e) {}
@@ -985,11 +984,11 @@
           )}
 
 
-          {/* 3. KONULAR SEKMESİ (YANLIŞ / TEKRAR NOTLARI İLE BİRLEŞTİRİLDİ) */}
+          {/* 3. KONULAR SEKMESİ (HATASIZ AÇILIR) */}
           {activeTab === "konular" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 10px", fontWeight: 600 }}>KPSS / ÖSYM Ders Analizi</p>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 10px", fontWeight: 600 }}>KPSS / ÖSYM Ders Seçimi</p>
                 <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
                   {DEFAULT_SUBJECTS.map((s) => (
                     <button key={s} onClick={() => setActiveTopicSubj(s)} style={{ background: activeTopicSubj === s ? "#38BDF8" : bgInner, color: activeTopicSubj === s ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontWeight: 600, cursor: "pointer", fontSize: "12px", whiteSpace: "nowrap" }}>
@@ -1003,7 +1002,6 @@
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 10px" }}>📌 {activeTopicSubj} - Yanlış / Tekrar Notu Ekle</p>
                 <form onSubmit={handleAddWrongNote} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <input type="hidden" value={newWrongSubj = activeTopicSubj} />
                   <textarea 
                     rows="2" 
                     placeholder="Unutulmaması gereken formül, kural veya yanlış yapılan soru detayı..." 
