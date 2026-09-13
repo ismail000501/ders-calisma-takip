@@ -40,6 +40,15 @@
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
+    const MOTIVATIONS = [
+      "Bugün döktüğün her damla alın teri, yarınki zaferinin immesidir.",
+      "Vazgeçmek üzere olduğunda, ne kadar ileri geldiğini hatırla.",
+      "ÖSYM salonunda yüzünü güldürecek olan bugünkü disiplindir.",
+      "Küçük adımlar büyük başarıları doğurur. Masadan kalkma!",
+      "Zorluklar başarının değerini artıran süslerdir.",
+      "Bugün çalışmadığın her saat, rakibinin öne geçtiği saattir."
+    ];
+
     const KPSS_TOPICS_DEFAULT = {
       "Türkçe": [
         "Sözcükte Anlam", "Cümlede Anlam", "Paragraf ve Anlatım Biçimleri", "Ses Bilgisi", 
@@ -112,6 +121,7 @@
       const [sayacFolder, setSayacFolder] = useState("kronometre");
       const [filterDate, setFilterDate] = useState("");
       const [menuOpen, setMenuOpen] = useState(false);
+      const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
 
       // Ders Kronometre State'leri
       const [subject, setSubject] = useState("");
@@ -163,6 +173,7 @@
           }
         };
         updateKpssTimer();
+        setCurrentQuoteIndex(Math.floor(Math.random() * MOTIVATIONS.length));
       }, []);
 
       // Hedefler
@@ -682,7 +693,7 @@
         }}>
           
           {/* ÜST BİLGİ BANDI: KPSS SINAV SAYACI & ÇALIŞMA SERİSİ */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
             <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", textAlign: "center" }}>
               <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 2px", fontWeight: 600 }}>⏳ KPSS'YE KALAN</p>
               <p style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#F59E0B" }}>{kpssDaysLeft} Gün</p>
@@ -691,6 +702,13 @@
               <p style={{ fontSize: "11px", color: textMuted, margin: "0 0 2px", fontWeight: 600 }}>🔥 ÇALIŞMA SERİSİ</p>
               <p style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#38BDF8" }}>{streakCount} Günlük Seri</p>
             </div>
+          </div>
+
+          {/* MOTİVASYON SÖZÜ BANDI */}
+          <div onClick={() => setCurrentQuoteIndex((prev) => (prev + 1) % MOTIVATIONS.length)} style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "10px 14px", marginBottom: "16px", textAlign: "center", cursor: "pointer" }} title="Yeni söz için tıkla">
+            <p style={{ fontSize: "12px", color: "#38BDF8", margin: 0, fontStyle: "italic", fontWeight: 500 }}>
+              💡 "{MOTIVATIONS[currentQuoteIndex]}" <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "2px" }}>(Değiştirmek için tıkla)</span>
+            </p>
           </div>
 
           {/* SAĞ ÜST HAMBURGER MENÜ */}
@@ -877,6 +895,22 @@
                 </div>
               )}
 
+              {/* ODAK / ÇALIŞMA MÜZİKLERİ HIZLI ERİŞİM */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px", textAlign: "center" }}>
+                <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 10px", color: textMuted }}>🎧 Odak Ambiyansı & Müzikler</p>
+                <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
+                  <a href="https://www.youtube.com/watch?v=jfKfPfyJRdk" target="_blank" rel="noreferrer" style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontSize: "12px", textDecoration: "none", fontWeight: 500 }}>
+                    🎵 Lo-Fi Hip Hop
+                  </a>
+                  <a href="https://www.youtube.com/watch?v=5qap5aO4i9A" target="_blank" rel="noreferrer" style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontSize: "12px", textDecoration: "none", fontWeight: 500 }}>
+                    🌧️ Yağmur Sesi
+                  </a>
+                  <a href="https://www.youtube.com/watch?v=77Zzx3wESrw" target="_blank" rel="noreferrer" style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", fontSize: "12px", textDecoration: "none", fontWeight: 500 }}>
+                    📚 Kütüphane Atmosferi
+                  </a>
+                </div>
+              </div>
+
               {/* GÜNLÜK ÇALIŞMA NOTU */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "24px" }}>
                 <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 10px", color: textMuted }}>📝 Bugünün Notu / Hedef Özeti</p>
@@ -984,7 +1018,7 @@
           )}
 
 
-          {/* 3. KONULAR SEKMESİ (HATASIZ AÇILIR) */}
+          {/* 3. KONULAR SEKMESİ */}
           {activeTab === "konular" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "16px", marginBottom: "20px" }}>
@@ -1141,18 +1175,29 @@
 
               {/* Geçmiş Deneme Sonuçları */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 600 }}>Geçmiş Deneme Sonuçları</p>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 600 }}>Geçmiş Deneme Sonuçları & Gelişim</p>
                 {exams.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kaydedilmiş deneme yok.</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "280px", overflowY: "auto" }}>
-                  {exams.map((ex) => (
-                    <div key={ex.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 4px" }}>{ex.name} <span style={{ fontSize: "11px", color: textMuted }}>({ex.date})</span></p>
-                        <p style={{ fontSize: "12px", color: textMuted, margin: 0 }}>Toplam Net: <strong style={{ color: "#38BDF8" }}>{ex.total}</strong> (TR: {ex.tr} | Mat: {ex.mat} | Sos: {ex.sos} | Fen/Vat: {ex.fen})</p>
+                  {exams.map((ex, idx) => {
+                    const prevEx = exams[idx + 1];
+                    const diff = prevEx ? (ex.total - prevEx.total).toFixed(2) : null;
+                    return (
+                      <div key={ex.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 4px" }}>{ex.name} <span style={{ fontSize: "11px", color: textMuted }}>({ex.date})</span></p>
+                          <p style={{ fontSize: "12px", color: textMuted, margin: 0 }}>
+                            Toplam Net: <strong style={{ color: "#38BDF8" }}>{ex.total}</strong> 
+                            {diff !== null && (
+                              <span style={{ marginLeft: "8px", color: Number(diff) >= 0 ? "#2DD4BF" : "#F43F5E", fontWeight: 600 }}>
+                                ({Number(diff) >= 0 ? "+" + diff : diff})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <button onClick={() => deleteExam(ex.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
                       </div>
-                      <button onClick={() => deleteExam(ex.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
