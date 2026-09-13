@@ -107,7 +107,7 @@
       const [topicMinutes, setTopicMinutes] = useState({});
       
       const [activeTab, setActiveTab] = useState("sayac");
-      const [sayacSubMode, setSayacSubMode] = useState("kronometre"); // "kronometre", "pomodoro", "paragraf"
+      const [sayacFolder, setSayacFolder] = useState("kronometre"); // "kronometre", "pomodoro", "paragraf"
       const [filterDate, setFilterDate] = useState("");
       const [menuOpen, setMenuOpen] = useState(false);
 
@@ -634,7 +634,7 @@
           </div>
 
 
-          {/* 1. SAYAÇ SEKMESİ (KLASÖRLERE AYRILMIŞ YAPILI SAYAÇ) */}
+          {/* 1. SAYAÇ SEKMESİ */}
           {activeTab === "sayac" && (
             <div>
               {/* GÜNLÜK HEDEF VE AYARLAR */}
@@ -664,21 +664,21 @@
                 </div>
               </div>
 
-              {/* SAYAÇ İÇİNDEKİ KLASÖRLER (SEKMELER) */}
+              {/* SAYAÇ İÇİNDEKİ SEÇENEKLİ KLASÖRLER */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "16px" }}>
-                <button onClick={() => setSayacSubMode("kronometre")} style={{ background: sayacSubMode === "kronometre" ? "#38BDF8" : bgCard, color: sayacSubMode === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
+                <button onClick={() => setSayacFolder("kronometre")} style={{ background: sayacFolder === "kronometre" ? "#38BDF8" : bgCard, color: sayacFolder === "kronometre" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
                   ⏱️ Ders Sayaç
                 </button>
-                <button onClick={() => setSayacSubMode("pomodoro")} style={{ background: sayacSubMode === "pomodoro" ? "#38BDF8" : bgCard, color: sayacSubMode === "pomodoro" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
+                <button onClick={() => setSayacFolder("pomodoro")} style={{ background: sayacFolder === "pomodoro" ? "#38BDF8" : bgCard, color: sayacFolder === "pomodoro" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
                   🍅 Pomodoro
                 </button>
-                <button onClick={() => setSayacSubMode("paragraf")} style={{ background: sayacSubMode === "paragraf" ? "#38BDF8" : bgCard, color: sayacSubMode === "paragraf" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
+                <button onClick={() => setSayacFolder("paragraf")} style={{ background: sayacFolder === "paragraf" ? "#38BDF8" : bgCard, color: sayacFolder === "paragraf" ? "#0B0F19" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 8px", fontWeight: 600, cursor: "pointer", fontSize: "12px", textAlign: "center" }}>
                   📖 Paragraf
                 </button>
               </div>
 
-              {/* DERS KRONOMETRESİ KLASÖRÜ */}
-              {sayacSubMode === "kronometre" && (
+              {/* DERS KRONOMETRESİ */}
+              {sayacFolder === "kronometre" && (
                 <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
                   <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>DERS ÇALIŞMA KRONOMETRESİ</p>
                   <div style={{ margin: "15px 0", fontSize: "42px", fontWeight: "bold", fontFamily: "serif" }}>
@@ -701,8 +701,8 @@
                 </div>
               )}
 
-              {/* POMODORO KLASÖRÜ */}
-              {sayacSubMode === "pomodoro" && (
+              {/* POMODORO */}
+              {sayacFolder === "pomodoro" && (
                 <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
                   <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>POMODORO GERİ SAYIM</p>
                   
@@ -736,8 +736,8 @@
                 </div>
               )}
 
-              {/* PARAGRAF KRONOMETRESİ KLASÖRÜ */}
-              {sayacSubMode === "paragraf" && (
+              {/* PARAGRAF */}
+              {sayacFolder === "paragraf" && (
                 <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "22px", marginBottom: "24px", textAlign: "center" }}>
                   <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 4px", fontWeight: 600 }}>PARAGRAF / SORU KRONOMETRESİ</p>
                   <div style={{ margin: "15px 0", fontSize: "40px", fontWeight: "bold", fontFamily: "serif", color: "#2DD4BF" }}>
@@ -812,7 +812,7 @@
           )}
 
 
-          {/* 2. İSTATİSTİKLER SEKMESİ */}
+          {/* 2. İSTATİSTİKLER SEKMESİ (SİYAH KALMA SORUNU GİDERİLDİ) */}
           {activeTab === "istatistik" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
@@ -1006,7 +1006,7 @@
           )}
 
 
-          {/* UYGULAMANIN EN ALTINDAKİ 4'LÜ SABİT SEKME ÇUBUĞU */}
+          {/* UYGULAMANIN EN ALTINDAKİ 4'LÜ KESİNLİKLE OYNAMAYAN SABİT SEKME ÇUBUĞU */}
           <div style={{ 
             position: "fixed", 
             bottom: 0, 
@@ -1017,7 +1017,7 @@
             display: "flex", 
             justifyContent: "space-around", 
             padding: "10px 8px", 
-            zIndex: 1000,
+            zIndex: 9999,
             boxShadow: "0 -4px 12px rgba(0,0,0,0.2)"
           }}>
             <button onClick={() => setActiveTab("sayac")} style={{ background: activeTab === "sayac" ? "#38BDF8" : "transparent", color: activeTab === "sayac" ? "#0B0F19" : colorMain, border: "none", borderRadius: "8px", padding: "8px 10px", fontWeight: 600, cursor: "pointer", fontSize: "12px", flex: 1, textAlign: "center" }}>
