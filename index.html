@@ -31,6 +31,7 @@
     const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+    const DEFAULT_SUBJECTS = ["Matematik", "Türkçe", "Fizik", "Kimya", "Biyoloji", "Tarih", "Coğrafya"];
 
     function pad(n) { return String(n).padStart(2, "0"); }
     function formatClock(totalSeconds) {
@@ -52,10 +53,16 @@
       const [loaded, setLoaded] = useState(false);
       const [theme, setTheme] = useState("dark");
       const [sessions, setSessions] = useState([]);
+      const [exams, setExams] = useState([]);
+      const [topics, setTopics] = useState({});
       
+      // Navigasyon Sekmesi: "sayac", "istatistik", "konular", "denemeler"
       const [activeTab, setActiveTab] = useState("sayac");
       const [mode, setMode] = useState("kronometre");
       
+      // Filtreleme State
+      const [filterDate, setFilterDate] = useState("");
+
       // Ders Kronometre State'leri
       const [subject, setSubject] = useState("");
       const [isRunning, setIsRunning] = useState(false);
@@ -81,8 +88,18 @@
       const pAccumulatedTimeRef = useRef(0);
       const pTickRef = useRef(null);
 
+      // Hedefler
       const [targetStudyMins, setTargetStudyMins] = useState(180);
       const [targetParagraphs, setTargetParagraphs] = useState(50);
+
+      // Yeni Konu ve Deneme Ekleme State'leri
+      const [newTopicSubject, setNewTopicSubject] = useState("Matematik");
+      const [newTopicName, setNewTopicName] = useState("");
+      const [examName, setExamName] = useState("");
+      const [examNetTr, setExamNetTr] = useState("");
+      const [examNetMat, setExamNetMat] = useState("");
+      const [examNetSos, setExamNetSos] = useState("");
+      const [examNetFen, setExamNetFen] = useState("");
 
       useEffect(() => {
         (async () => {
@@ -91,16 +108,24 @@
             if (t) setTheme(t);
           } catch (e) {}
           try {
-            const s = localStorage.getItem("study-sessions-v7");
+            const s = localStorage.getItem("study-sessions-v8");
             if (s) setSessions(JSON.parse(s));
+          } catch (e) {}
+          try {
+            const e = localStorage.getItem("study-exams-v1");
+            if (e) setExams(JSON.parse(e));
+          } catch (e) {}
+          try {
+            const tp = localStorage.getItem("study-topics-v1");
+            if (tp) setTopics(JSON.parse(tp));
           } catch (e) {}
           try {
             const ts = localStorage.getItem("study-target-mins-v2");
             if (ts) setTargetStudyMins(Number(ts));
           } catch (e) {}
           try {
-            const tp = localStorage.getItem("study-target-p-v2");
-            if (tp) setTargetParagraphs(Number(tp));
+            const tpTarget = localStorage.getItem("study-target-p-v2");
+            if (tpTarget) setTargetParagraphs(Number(tpTarget));
           } catch (e) {}
           setLoaded(true);
         })();
@@ -114,7 +139,17 @@
 
       const saveSessions = useCallback((next) => {
         setSessions(next);
-        try { localStorage.setItem("study-sessions-v7", JSON.stringify(next)); } catch (e) {}
+        try { localStorage.setItem("study-sessions-v8", JSON.stringify(next)); } catch (e) {}
+      }, []);
+
+      const saveExams = useCallback((next) => {
+        setExams(next);
+        try { localStorage.setItem("study-exams-v1", JSON.stringify(next)); } catch (e) {}
+      }, []);
+
+      const saveTopics = useCallback((next) => {
+        setTopics(next);
+        try { localStorage.setItem("study-topics-v1", JSON.stringify(next)); } catch (e) {}
       }, []);
 
       const updateTargetMins = (val) => {
@@ -284,6 +319,80 @@
       };
 
       const deleteSession = (id) => saveSessions(sessions.filter((s) => s.id !== id));
+      const deleteExam = (id) => saveExams(exams.filter((e) => e.id !== id));
+
+      const handleAddTopic = (e) => {
+        e.preventDefault();
+        if (!newTopicName.trim()) return;
+        const list = topics[newTopicSubject] || [];
+        const nextList = [...list, { id: Date.now(), name: newTopicName.trim(), completed: false }];
+        saveTopics({ ...topics, [newTopicSubject]: nextList });
+        setNewTopicName("");
+      };
+
+      const toggleTopic = (subj, id) => {
+        const list = topics[subj] || [];
+        const nextList = list.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+        saveTopics({ ...topics, [subj]: nextList });
+      };
+
+      const deleteTopic = (subj, id) => {
+        const list = topics[subj] || [];
+        saveTopics({ ...topics, [subj]: list.filter(t => t.id !== id) });
+      };
+
+      const handleAddExam = (e) => {
+        e.preventDefault();
+        if (!examName.trim()) return;
+        const exam = {
+          id: Date.now(),
+          name: examName.trim(),
+          tr: Number(examNetTr) || 0,
+          mat: Number(examNetMat) || 0,
+          sos: Number(examNetSos) || 0,
+          fen: Number(examNetFen) || 0,
+          total: (Number(examNetTr) || 0) + (Number(examNetMat) || 0) + (Number(examNetSos) || 0) + (Number(examNetFen) || 0),
+          date: isoDay(new Date())
+        };
+        saveExams([exam, ...exams]);
+        setExamName("");
+        setExamNetTr("");
+        setExamNetMat("");
+        setExamNetSos("");
+        setExamNetFen("");
+      };
+
+      // JSON Yedekleme / Dışa Aktarma
+      const exportData = () => {
+        const data = { sessions, exams, topics, targetStudyMins, targetParagraphs };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ders-takip-yedek-${isoDay(new Date())}.json`;
+        a.click();
+      };
+
+      // JSON Geri Yükleme / İçe Aktarma
+      const importData = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (data.sessions) saveSessions(data.sessions);
+            if (data.exams) saveExams(data.exams);
+            if (data.topics) saveTopics(data.topics);
+            if (data.targetStudyMins) updateTargetMins(data.targetStudyMins);
+            if (data.targetParagraphs) updateTargetParagraphs(data.targetParagraphs);
+            alert("Yedek başarıyla yüklendi!");
+          } catch (err) {
+            alert("Geçersiz yedek dosyası!");
+          }
+        };
+        reader.readAsText(file);
+      };
 
       const today = isoDay(new Date());
       const todaySessions = sessions.filter((s) => s.date === today);
@@ -291,6 +400,11 @@
       const todayMinutes = todaySessions.filter(s => s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
       const todayParagraphMinutes = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + s.minutes, 0);
       const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
+
+      const filteredSessions = useMemo(() => {
+        if (!filterDate) return sessions;
+        return sessions.filter(s => s.date === filterDate);
+      }, [sessions, filterDate]);
 
       const subjectDistribution = useMemo(() => {
         const map = {};
@@ -342,26 +456,16 @@
           position: "relative"
         }}>
           
-          {/* SAĞ ÜST TEMA BUTONU */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-            <button 
-              onClick={toggleTheme} 
-              style={{ 
-                background: bgCard, 
-                color: colorMain, 
-                border: `1px solid ${borderCard}`, 
-                borderRadius: "50%", 
-                width: "40px", 
-                height: "40px", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center", 
-                cursor: "pointer",
-                fontSize: "18px",
-                boxShadow: "0 2px 5px rgba(0,0,0,0.1)"
-              }}
-              title="Temayı Değiştir"
-            >
+          {/* SAĞ ÜST TEMA VE YEDEKLEME BUTONLARI */}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginBottom: "16px" }}>
+            <button onClick={exportData} style={{ background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: 600 }} title="Yedeği İndir">
+              📥 Yedekle
+            </button>
+            <label style={{ background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: 600, display: "flex", alignItems: "center" }} title="Yedek Yükle">
+              📤 Yükle
+              <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
+            </label>
+            <button onClick={toggleTheme} style={{ background: bgCard, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "50%", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "18px" }} title="Tema">
               {isDark ? "🌞" : "🌙"}
             </button>
           </div>
@@ -495,7 +599,7 @@
                 </div>
               </div>
 
-              {/* ÖZET KARTLARI (Sadece Sayaç Sekmesinde) */}
+              {/* ÖZET KARTLARI */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
                 <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px" }}>
                   <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün ders</p>
@@ -511,12 +615,19 @@
                 </div>
               </div>
 
-              {/* GEÇMİŞ OTURUMLAR (Sadece Sayaç Sekmesinde) */}
+              {/* GEÇMİŞ OTURUMLAR (TARİH FİLTRELİ) */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "30px" }}>
-                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Geçmiş oturumlar</p>
-                {sessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kayıt yok.</p>}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                  <p style={{ fontSize: "13px", color: textMuted, margin: 0, fontWeight: 600 }}>Geçmiş Oturumlar</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{ background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "6px", padding: "4px 8px", fontSize: "12px" }} />
+                    {filterDate && <button onClick={() => setFilterDate("")} style={{ background: "transparent", color: "#38BDF8", border: "none", cursor: "pointer", fontSize: "12px" }}>Tümü</button>}
+                  </div>
+                </div>
+
+                {filteredSessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Kayıt bulunamadı.</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "240px", overflowY: "auto" }}>
-                  {sessions.map((item) => (
+                  {filteredSessions.map((item) => (
                     <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "8px 12px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px" }}>
                       <span>
                         {item.type === "paragraf" 
@@ -533,10 +644,9 @@
           )}
 
 
-          {/* 2. İSTATİSTİKLER SEKMESİ (Sadece Grafikler) */}
+          {/* 2. İSTATİSTİKLER SEKMESİ */}
           {activeTab === "istatistik" && (
             <div>
-              {/* 1. GRAFİK: Haftalık Çubuk Grafik */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 16px", fontWeight: 600 }}>📊 Haftalık Performans Çubuk Grafiği</p>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "130px", paddingBottom: "8px", borderBottom: `1px solid ${borderCard}` }}>
@@ -552,7 +662,6 @@
                 </div>
               </div>
 
-              {/* 2. GRAFİK / TABLO: Günlük Dakika Kutucukları */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 600 }}>📅 Günlük Dakika Tablosu</p>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", textAlign: "center" }}>
@@ -565,7 +674,6 @@
                 </div>
               </div>
 
-              {/* DERSLERE GÖRE DAĞILIM ÖZETİ */}
               {subjectDistribution.length > 0 && (
                 <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
                   <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Derslere Göre Toplam Dağılım</p>
@@ -583,7 +691,89 @@
           )}
 
 
-          {/* UYGULAMANIN EN ALTINDAKİ SABİT SEKME ÇUBUĞU */}
+          {/* 3. KONULAR SEKMESİ (DERS DERS KONU TAKİBİ) */}
+          {activeTab === "konular" && (
+            <div>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 12px" }}>📚 Konu Bitirme Takipçisi</p>
+                <form onSubmit={handleAddTopic} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <select value={newTopicSubject} onChange={(e) => setNewTopicSubject(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }}>
+                    {DEFAULT_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <input placeholder="Konu adı (ör. Türev, Paragraf Taktikleri)" value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                  <button type="submit" style={{ background: "#38BDF8", color: "#0B0F19", border: "none", padding: "10px", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>Konu Ekle</button>
+                </form>
+              </div>
+
+              {DEFAULT_SUBJECTS.map((subj) => {
+                const list = topics[subj] || [];
+                const completedCount = list.filter(t => t.completed).length;
+                const pct = list.length > 0 ? Math.round((completedCount / list.length) * 100) : 0;
+                return (
+                  <div key={subj} style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "14px" }}>{subj}</span>
+                      <span style={{ fontSize: "12px", color: textMuted }}>%{pct} ({completedCount}/{list.length})</span>
+                    </div>
+                    <div style={{ width: "100%", background: bgInner, height: "6px", borderRadius: "3px", overflow: "hidden", marginBottom: "12px" }}>
+                      <div style={{ width: `${pct}%`, background: "#38BDF8", height: "100%", transition: "width 0.3s ease" }}></div>
+                    </div>
+                    {list.length === 0 && <p style={{ fontSize: "12px", color: textMuted, margin: 0 }}>Bu derse ait konu eklenmemiş.</p>}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {list.map(t => (
+                        <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "8px 10px", borderRadius: "8px", border: `1px solid ${borderCard}` }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", cursor: "pointer", textDecoration: t.completed ? "line-through" : "none", color: t.completed ? textMuted : colorMain }}>
+                            <input type="checkbox" checked={t.completed} onChange={() => toggleTopic(subj, t.id)} style={{ cursor: "pointer" }} />
+                            {t.name}
+                          </label>
+                          <button onClick={() => deleteTopic(subj, t.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontSize: "12px" }}>Sil</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+
+          {/* 4. DENEMELER SEKMESİ (NET TAKİBİ) */}
+          {activeTab === "denemeler" && (
+            <div>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 12px" }}>📈 Yeni Deneme Sınavı Ekle</p>
+                <form onSubmit={handleAddExam} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <input placeholder="Deneme Adı (ör. TYT Genel Deneme 1)" value={examName} onChange={(e) => setExamName(e.target.value)} style={{ padding: "10px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    <input placeholder="Türkçe Net" type="number" step="0.25" value={examNetTr} onChange={(e) => setExamNetTr(e.target.value)} style={{ padding: "8px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                    <input placeholder="Matematik Net" type="number" step="0.25" value={examNetMat} onChange={(e) => setExamNetMat(e.target.value)} style={{ padding: "8px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                    <input placeholder="Sosyal Net" type="number" step="0.25" value={examNetSos} onChange={(e) => setExamNetSos(e.target.value)} style={{ padding: "8px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                    <input placeholder="Fen Net" type="number" step="0.25" value={examNetFen} onChange={(e) => setExamNetFen(e.target.value)} style={{ padding: "8px", borderRadius: "8px", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, fontSize: "13px" }} />
+                  </div>
+                  <button type="submit" style={{ background: "#2DD4BF", color: "#0B0F19", border: "none", padding: "10px", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "13px", marginTop: "4px" }}>Denemeyi Kaydet</button>
+                </form>
+              </div>
+
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px", fontWeight: 600 }}>Geçmiş Deneme Sonuçları</p>
+                {exams.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kaydedilmiş deneme yok.</p>}
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
+                  {exams.map((ex) => (
+                    <div key={ex.id} style={{ background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px", padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <p style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 4px" }}>{ex.name} <span style={{ fontSize: "11px", color: textMuted }}>({ex.date})</span></p>
+                        <p style={{ fontSize: "12px", color: textMuted, margin: 0 }}>Toplam Net: <strong style={{ color: "#38BDF8" }}>{ex.total}</strong> (TR: {ex.tr} | Mat: {ex.mat} | Sos: {ex.sos} | Fen: {ex.fen})</p>
+                      </div>
+                      <button onClick={() => deleteExam(ex.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>Sil</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {/* UYGULAMANIN EN ALTINDAKİ 4'LÜ SABİT SEKME ÇUBUĞU */}
           <div style={{ 
             position: "fixed", 
             bottom: 0, 
@@ -593,43 +783,21 @@
             borderTop: `1px solid ${borderCard}`, 
             display: "flex", 
             justifyContent: "space-around", 
-            padding: "10px 16px", 
+            padding: "8px 6px", 
             zIndex: 1000,
             boxShadow: "0 -4px 10px rgba(0,0,0,0.15)"
           }}>
-            <button 
-              onClick={() => setActiveTab("sayac")} 
-              style={{ 
-                background: activeTab === "sayac" ? "#38BDF8" : "transparent", 
-                color: activeTab === "sayac" ? "#0B0F19" : colorMain, 
-                border: "none", 
-                borderRadius: "8px", 
-                padding: "8px 24px", 
-                fontWeight: 600, 
-                cursor: "pointer", 
-                fontSize: "14px",
-                flex: 1,
-                maxWidth: "200px"
-              }}
-            >
+            <button onClick={() => setActiveTab("sayac")} style={{ background: activeTab === "sayac" ? "#38BDF8" : "transparent", color: activeTab === "sayac" ? "#0B0F19" : colorMain, border: "none", borderRadius: "6px", padding: "6px 8px", fontWeight: 600, cursor: "pointer", fontSize: "11px", flex: 1, textAlign: "center" }}>
               ⏱️ Sayaç
             </button>
-            <button 
-              onClick={() => setActiveTab("istatistik")} 
-              style={{ 
-                background: activeTab === "istatistik" ? "#38BDF8" : "transparent", 
-                color: activeTab === "istatistik" ? "#0B0F19" : colorMain, 
-                border: "none", 
-                borderRadius: "8px", 
-                padding: "8px 24px", 
-                fontWeight: 600, 
-                cursor: "pointer", 
-                fontSize: "14px",
-                flex: 1,
-                maxWidth: "200px"
-              }}
-            >
-              📊 İstatistikler
+            <button onClick={() => setActiveTab("istatistik")} style={{ background: activeTab === "istatistik" ? "#38BDF8" : "transparent", color: activeTab === "istatistik" ? "#0B0F19" : colorMain, border: "none", borderRadius: "6px", padding: "6px 8px", fontWeight: 600, cursor: "pointer", fontSize: "11px", flex: 1, textAlign: "center" }}>
+              📊 İstatistik
+            </button>
+            <button onClick={() => setActiveTab("konular")} style={{ background: activeTab === "konular" ? "#38BDF8" : "transparent", color: activeTab === "konular" ? "#0B0F19" : colorMain, border: "none", borderRadius: "6px", padding: "6px 8px", fontWeight: 600, cursor: "pointer", fontSize: "11px", flex: 1, textAlign: "center" }}>
+              📚 Konular
+            </button>
+            <button onClick={() => setActiveTab("denemeler")} style={{ background: activeTab === "denemeler" ? "#38BDF8" : "transparent", color: activeTab === "denemeler" ? "#0B0F19" : colorMain, border: "none", borderRadius: "6px", padding: "6px 8px", fontWeight: 600, cursor: "pointer", fontSize: "11px", flex: 1, textAlign: "center" }}>
+              📈 Deneme
             </button>
           </div>
 
