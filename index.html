@@ -129,7 +129,7 @@
         try { localStorage.setItem("study-target-p-v2", String(v)); } catch (e) {}
       };
 
-      // 1. Ders Kronometre
+      // 1. Ders Kronometre (Arka planda asla şaşmaz)
       useEffect(() => {
         if (isRunning) {
           startTimeRef.current = Date.now();
@@ -145,7 +145,7 @@
         return () => { if (tickRef.current) clearInterval(tickRef.current); };
       }, [isRunning]);
 
-      // 2. Pomodoro
+      // 2. Pomodoro (Arka planda asla şaşmaz)
       useEffect(() => {
         if (isPomoRunning) {
           pomoEndTimeRef.current = Date.now() + (pomoRemainingAtPauseRef.current * 1000);
@@ -168,7 +168,7 @@
         return () => { if (pomoTickRef.current) clearInterval(pomoTickRef.current); };
       }, [isPomoRunning]);
 
-      // 3. Paragraf Kronometre
+      // 3. Paragraf Kronometre (Arka planda asla şaşmaz)
       useEffect(() => {
         if (pIsRunning) {
           pStartTimeRef.current = Date.now();
@@ -494,11 +494,46 @@
                   </button>
                 </div>
               </div>
+
+              {/* ÖZET KARTLARI (Sadece Sayaç Sekmesinde) */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px" }}>
+                  <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün ders</p>
+                  <p style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>{formatMinutes(todayMinutes)}</p>
+                </div>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px" }}>
+                  <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün paragraf</p>
+                  <p style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>{formatMinutes(todayParagraphMinutes)} ({todayParagraphCount} soru)</p>
+                </div>
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px", gridColumn: "span 2" }}>
+                  <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bu hafta toplam ders</p>
+                  <p style={{ fontSize: "20px", fontWeight: 600, margin: 0 }}>{formatMinutes(weekMinutes)}</p>
+                </div>
+              </div>
+
+              {/* GEÇMİŞ OTURUMLAR (Sadece Sayaç Sekmesinde) */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "30px" }}>
+                <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Geçmiş oturumlar</p>
+                {sessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kayıt yok.</p>}
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "240px", overflowY: "auto" }}>
+                  {sessions.map((item) => (
+                    <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "8px 12px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px" }}>
+                      <span>
+                        {item.type === "paragraf" 
+                          ? `📖 Paragraf — ${item.date} — ${item.count} soru (${formatClock(item.seconds)})`
+                          : `${item.subject} — ${item.date} — ${formatMinutes(item.minutes)}`
+                        }
+                      </span>
+                      <button onClick={() => deleteSession(item.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold" }}>Sil</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
 
-          {/* 2. İSTATİSTİKLER SEKMESİ (GRAFİKLER AYRI AYRI) */}
+          {/* 2. İSTATİSTİKLER SEKMESİ (Sadece Grafikler) */}
           {activeTab === "istatistik" && (
             <div>
               {/* 1. GRAFİK: Haftalık Çubuk Grafik */}
@@ -546,42 +581,6 @@
               )}
             </div>
           )}
-
-
-          {/* ÖZET KARTLARI (HER İKİ SEKMEDE DE GÖRÜNÜR) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
-            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px" }}>
-              <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün ders</p>
-              <p style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>{formatMinutes(todayMinutes)}</p>
-            </div>
-            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px" }}>
-              <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bugün paragraf</p>
-              <p style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>{formatMinutes(todayParagraphMinutes)} ({todayParagraphCount} soru)</p>
-            </div>
-            <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "14px", gridColumn: "span 2" }}>
-              <p style={{ fontSize: "12px", color: textMuted, margin: "0 0 4px" }}>Bu hafta toplam ders</p>
-              <p style={{ fontSize: "20px", fontWeight: 600, margin: 0 }}>{formatMinutes(weekMinutes)}</p>
-            </div>
-          </div>
-
-          {/* GEÇMİŞ OTURUMLAR (HER İKİ SEKMEDE DE GÖRÜNÜR) */}
-          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "16px", marginBottom: "30px" }}>
-            <p style={{ fontSize: "13px", color: textMuted, margin: "0 0 12px" }}>Geçmiş oturumlar</p>
-            {sessions.length === 0 && <p style={{ fontSize: "13px", color: textMuted, margin: 0 }}>Henüz kayıt yok.</p>}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "240px", overflowY: "auto" }}>
-              {sessions.map((item) => (
-                <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px", padding: "8px 12px", background: bgInner, border: `1px solid ${borderCard}`, borderRadius: "8px" }}>
-                  <span>
-                    {item.type === "paragraf" 
-                      ? `📖 Paragraf — ${item.date} — ${item.count} soru (${formatClock(item.seconds)})`
-                      : `${item.subject} — ${item.date} — ${formatMinutes(item.minutes)}`
-                    }
-                  </span>
-                  <button onClick={() => deleteSession(item.id)} style={{ background: "transparent", color: "#F43F5E", border: "none", cursor: "pointer", fontWeight: "bold" }}>Sil</button>
-                </div>
-              ))}
-            </div>
-          </div>
 
 
           {/* UYGULAMANIN EN ALTINDAKİ SABİT SEKME ÇUBUĞU */}
