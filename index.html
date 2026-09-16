@@ -17,7 +17,7 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow-x: hidden; /* Sağa sola kaymayı kesin olarak engeller */
+      overflow-x: hidden;
       font-family: 'Inter', sans-serif;
       touch-action: manipulation;
       -webkit-text-size-adjust: 100%;
@@ -34,6 +34,12 @@
       100% { transform: translateY(0px); }
     }
     .tree-animate { animation: floatTree 3s ease-in-out infinite; }
+    @keyframes softGlow {
+      0% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
+      50% { box-shadow: 0 0 30px rgba(244, 63, 94, 0.4); }
+      100% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
+    }
+    .love-card-glow { animation: softGlow 4s infinite; }
     input, textarea, button, select { font-family: 'Inter', sans-serif; }
     input:focus, textarea:focus, select:focus { outline: none; border-color: #38BDF8 !important; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
     button { transition: transform 0.1s ease, opacity 0.2s ease; }
@@ -48,6 +54,16 @@
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
+    // Sevgilinin yüzünü güldürecek tatlı iltifatlar ve motivasyonlar
+    const LOVE_COMPLIMENTS = [
+      "Bugün de ne kadar güzel ve akıllısın sen öyle! Kalbim seninle atıyor sevgilim. ❤️",
+      "Çalışırken o kadar tatlı ve odaklı oluyorsun ki, sana hayran olmamak elde değil. ✨",
+      "Biliyorum bazen yoruluyorsun ama senin başaramayacağın hiçbir şey yok meleğim! Sen en iyisine layıksın. 🌸",
+      "Gülüşün dünyaya bedel. Arada bir derin bir nefes al ve ne kadar harika olduğunu hatırla sevgilim! 💖",
+      "Seninle gurur duyuyorum! Hedeflerine adım adım ilerlerken arkanda daima ben varım. 🌟",
+      "Dünyanın en tatlı ve en çalışkan sevgilisi iyi ki varsın! Hayatımın en güzel şansısın. 💫"
+    ];
+
     const MOTIVATIONS = [
       "Bugün döktüğün her damla alın teri, yarınki zaferinin temelidir.",
       "Vazgeçmek üzere olduğunda, ne kadar ileri geldiğini hatırla.",
@@ -160,6 +176,7 @@
       const [filterDate, setFilterDate] = useState("");
       const [settingsModalOpen, setSettingsModalOpen] = useState(false);
       const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
+      const [loveIndex, setLoveIndex] = useState(0);
 
       const [blockIndex, setBlockIndex] = useState(0);
       const [blockSecondsLeft, setBlockSecondsLeft] = useState(7200);
@@ -215,14 +232,6 @@
       const pAccumulatedTimeRef = useRef(0);
       const pTickRef = useRef(null);
 
-      const [examDurationMins, setExamDurationMins] = useState(135);
-      const [examSecondsLeft, setExamSecondsLeft] = useState(135 * 60);
-      const [isExamRunning, setIsExamRunning] = useState(false);
-      const [examTimerName, setExamTimerName] = useState("");
-      const examEndTimeRef = useRef(null);
-      const examRemainingAtPauseRef = useRef(135 * 60);
-      const examTickRef = useRef(null);
-
       const [kpssDaysLeft, setKpssDaysLeft] = useState(0);
 
       useEffect(() => {
@@ -238,6 +247,7 @@
         };
         updateKpssTimer();
         setCurrentQuoteIndex(Math.floor(Math.random() * MOTIVATIONS.length));
+        setLoveIndex(Math.floor(Math.random() * LOVE_COMPLIMENTS.length));
       }, []);
 
       const [targetStudyMins, setTargetStudyMins] = useState(180);
@@ -655,6 +665,18 @@
           overflowX: "hidden"
         }}>
           
+          {/* SEVGİLİYE ÖZEL İLTİFAT VE MOTİVASYON KARTI */}
+          <div onClick={() => setLoveIndex((prev) => (prev + 1) % LOVE_COMPLIMENTS.length)} className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", cursor: "pointer", textAlign: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+              <span style={{ fontSize: "16px" }}>💖</span>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#F43F5E", letterSpacing: "0.5px", textTransform: "uppercase" }}>Günün İltifatı</span>
+            </div>
+            <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700, lineHeight: 1.5 }}>
+              "{LOVE_COMPLIMENTS[loveIndex]}"
+            </p>
+            <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Yeni bir iltifat görmek için karta dokun 💕)</span>
+          </div>
+
           {/* PROFESYONEL ÜST HEADER & SEVİYE KARTI */}
           <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", boxShadow: "0 10px 30px rgba(0,0,0,0.25)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
