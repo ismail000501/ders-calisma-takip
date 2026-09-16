@@ -42,13 +42,30 @@
     .love-card-glow { animation: softGlow 4s infinite; }
     
     @keyframes floatHeart {
-      0% { transform: translateY(0px) scale(0.8); opacity: 0.3; }
-      50% { transform: translateY(-8px) scale(1.1); opacity: 0.7; }
-      100% { transform: translateY(0px) scale(0.8); opacity: 0.3; }
+      0% { transform: translateY(0px) scale(0.8); opacity: 0.25; }
+      50% { transform: translateY(-7px) scale(1.1); opacity: 0.65; }
+      100% { transform: translateY(0px) scale(0.8); opacity: 0.25; }
     }
     .heart-float-1 { animation: floatHeart 3s ease-in-out infinite; }
     .heart-float-2 { animation: floatHeart 4s ease-in-out infinite 1s; }
     .heart-float-3 { animation: floatHeart 3.5s ease-in-out infinite 0.5s; }
+    .heart-float-4 { animation: floatHeart 4.5s ease-in-out infinite 1.5s; }
+    .heart-float-5 { animation: floatHeart 3.2s ease-in-out infinite 0.8s; }
+
+    @keyframes confettiFall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .confetti {
+      position: fixed;
+      top: -10px;
+      width: 10px;
+      height: 10px;
+      background-color: #F43F5E;
+      animation: confettiFall 2.5s ease-in-out forwards;
+      z-index: 999999;
+      pointer-events: none;
+    }
 
     input, textarea, button, select { font-family: 'Inter', sans-serif; }
     input:focus, textarea:focus, select:focus { outline: none; border-color: #38BDF8 !important; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
@@ -64,7 +81,7 @@
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
-    // Binlerce kombinasyon üreten devasa ve en seçkin iltifat / sevgi havuzu mekanizması
+    // Binlerce kombinasyon üreten devasa ve en seçkin iltifat / sevgi havuzu
     const LOVE_OPENINGS = [
       "Bugün de", "Her zamanki gibi", "Biliyor musun,", "Dünyanın en güzeli,", 
       "Gözbebeğim,", "Canımın içi,", "İyi ki hayatımdasın,", "Güzel sevgilim,",
@@ -97,6 +114,14 @@
       "Küçük adımlar büyük başarıları doğurur. Masadan kalkma!",
       "Zorluklar başarının değerini artıran en büyük unsurlardır.",
       "Bugün çalışmadığın her saat, rakibinin öne geçtiği saattir."
+    ];
+
+    const MINI_QUIZ_QUESTIONS = [
+      { q: "Türkiye'nin yüz ölçümü olarak en büyük ili hangisidir?", options: ["Konya", "Ankara", "Sivas", "Erzurum"], answer: 0 },
+      { q: "1982 Anayasası'na göre cumhurbaşkanlığı seçimi kaç yılda bir yapılır?", options: ["4", "5", "6", "7"], answer: 1 },
+      { q: "Amasya Genelgesi'nin kararlarını kaleme alan ve imzalayan milli mücadele önderi kimdir?", options: ["İsmet İnönü", "Kazım Karabekir", "Mustafa Kemal Atatürk", "Fevzi Çakmak"], answer: 2 },
+      { q: "Türkiye'de ilk pamuklu dokuma fabrikası hangi ilimizde açılmıştır?", options: ["İzmir", "Adana", "Aydın", "Denizli"], answer: 1 },
+      { q: "Anayasa mahkemesi üyelerini kim seçer?", options: ["TBMM", "Cumhurbaşkanı", "Hâkimler ve Savcılar Kurulu", "Yargıtay"], answer: 1 }
     ];
 
     const KPSS_TOPICS_DEFAULT = {
@@ -184,6 +209,19 @@
     function isoDay(date) { return date.toISOString().slice(0, 10); }
     function mondayIndex(date) { return (date.getDay() + 6) % 7; }
 
+    function triggerConfetti() {
+      for (let i = 0; i < 35; i++) {
+        const c = document.createElement("div");
+        c.className = "confetti";
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.backgroundColor = ["#38BDF8", "#2DD4BF", "#F43F5E", "#F59E0B", "#EC4899"][Math.floor(Math.random() * 5)];
+        c.style.animationDuration = (Math.random() * 1.5 + 1.5) + "s";
+        c.style.animationDelay = (Math.random() * 0.3) + "s";
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 3000);
+      }
+    }
+
     function StudyTracker() {
       const [loaded, setLoaded] = useState(false);
       const [theme, setTheme] = useState("dark");
@@ -197,12 +235,19 @@
       const [forestCount, setForestCount] = useState(0);
       const [kpssArchive, setKpssArchive] = useState({});
       
+      const [favoriteCompliments, setFavoriteCompliments] = useState([]);
+      const [adminLoveNote, setAdminLoveNote] = useState("Bugün de masada harikalar yaratıyorsun sevgilim, seninle gurur duyuyorum! 💖");
+      
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
       const [filterDate, setFilterDate] = useState("");
       const [settingsModalOpen, setSettingsModalOpen] = useState(false);
       const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
       const [currentLoveText, setCurrentLoveText] = useState("");
+
+      const [quizIndex, setQuizIndex] = useState(0);
+      const [selectedQuizOpt, setSelectedQuizOpt] = useState(null);
+      const [quizScore, setQuizScore] = useState(0);
 
       const [blockIndex, setBlockIndex] = useState(0);
       const [blockSecondsLeft, setBlockSecondsLeft] = useState(7200);
@@ -299,6 +344,8 @@
         try { const fc = localStorage.getItem("study-flashcards-v1"); if (fc) setFlashcards(JSON.parse(fc)); } catch (e) {}
         try { const fcCount = localStorage.getItem("study-forest-count-v1"); if (fcCount) setForestCount(Number(fcCount)); } catch (e) {}
         try { const ka = localStorage.getItem("study-kpss-archive-v1"); if (ka) setKpssArchive(JSON.parse(ka)); } catch (e) {}
+        try { const fv = localStorage.getItem("study-fav-compliments-v1"); if (fv) setFavoriteCompliments(JSON.parse(fv)); } catch (e) {}
+        try { const an = localStorage.getItem("study-admin-love-note-v1"); if (an) setAdminLoveNote(an); } catch (e) {}
         try {
           const tp = localStorage.getItem("study-topics-v3");
           if (tp) {
@@ -374,6 +421,23 @@
         setExams(next);
         try { localStorage.setItem("study-exams-v1", JSON.stringify(next)); } catch (e) {}
       }, []);
+
+      const toggleFavoriteCompliment = (txt) => {
+        let next;
+        if (favoriteCompliments.includes(txt)) {
+          next = favoriteCompliments.filter(f => f !== txt);
+        } else {
+          next = [txt, ...favoriteCompliments];
+          triggerConfetti();
+        }
+        setFavoriteCompliments(next);
+        try { localStorage.setItem("study-fav-compliments-v1", JSON.stringify(next)); } catch (e) {}
+      };
+
+      const saveAdminLoveNote = (val) => {
+        setAdminLoveNote(val);
+        try { localStorage.setItem("study-admin-love-note-v1", val); } catch (e) {}
+      };
 
       const toggleKpssArchiveItem = (year) => {
         const next = { ...kpssArchive, [year]: !kpssArchive[year] };
@@ -460,6 +524,7 @@
               const newForest = forestCount + 1;
               setForestCount(newForest);
               try { localStorage.setItem("study-forest-count-v1", String(newForest)); } catch (e) {}
+              triggerConfetti();
               alert("🎉 Pomodoro bitti! Ormanına 1 yeni odak ağacı eklendi!");
             } else {
               setPomoSecondsLeft(leftSecs);
@@ -504,6 +569,7 @@
           setForestCount(newForest);
           try { localStorage.setItem("study-forest-count-v1", String(newForest)); } catch (e) {}
         }
+        triggerConfetti();
         setIsRunning(false); setElapsed(0); accumulatedTimeRef.current = 0;
       };
 
@@ -524,6 +590,7 @@
         const newForest = forestCount + 1;
         setForestCount(newForest);
         try { localStorage.setItem("study-forest-count-v1", String(newForest)); } catch (e) {}
+        triggerConfetti();
         setIsPomoRunning(false); setPomoSecondsLeft(pomoMinutes * 60); pomoRemainingAtPauseRef.current = pomoMinutes * 60;
       };
 
@@ -536,6 +603,7 @@
         const minutes = Math.max(1, Math.round(pElapsed / 60));
         const log = { id: Date.now(), type: "paragraf", subject: "Paragraf / Soru", minutes, count: pCount, seconds: pElapsed, date: isoDay(new Date()) };
         saveSessions([log, ...sessions]);
+        triggerConfetti();
         setPIsRunning(false); setPElapsed(0); pAccumulatedTimeRef.current = 0; setPCount(0);
       };
 
@@ -562,7 +630,7 @@
       };
 
       const exportData = () => {
-        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes, flashcards, forestCount, kpssArchive };
+        const data = { sessions, exams, topics, topicMinutes, targetStudyMins, targetParagraphs, dailyNotes, wrongNotes, flashcards, forestCount, kpssArchive, favoriteCompliments, adminLoveNote };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -584,6 +652,8 @@
             if (data.wrongNotes) setWrongNotes(data.wrongNotes);
             if (data.flashcards) setFlashcards(data.flashcards);
             if (data.kpssArchive) setKpssArchive(data.kpssArchive);
+            if (data.favoriteCompliments) setFavoriteCompliments(data.favoriteCompliments);
+            if (data.adminLoveNote) saveAdminLoveNote(data.adminLoveNote);
             if (data.forestCount !== undefined) setForestCount(data.forestCount);
             if (data.targetStudyMins) updateTargetMins(data.targetStudyMins);
             if (data.targetParagraphs) updateTargetParagraphs(data.targetParagraphs);
@@ -596,6 +666,9 @@
       const todaySessions = sessions.filter((s) => s.date === today);
       const todayMinutes = todaySessions.filter(s => s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
       const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
+
+      const isStudyGoalReached = todayMinutes >= targetStudyMins;
+      const isParagraphGoalReached = todayParagraphCount >= targetParagraphs;
 
       const totalXp = useMemo(() => {
         const totalMin = sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
@@ -675,6 +748,7 @@
       if (!loaded) return null;
 
       const activeBlock = KPSS_ROTATING_BLOCKS[blockIndex];
+      const isFav = favoriteCompliments.includes(currentLoveText);
 
       return (
         <div style={{ 
@@ -691,25 +765,38 @@
           overflowX: "hidden"
         }}>
           
-          {/* SEVGİLİYE ÖZEL ARKA PLANI KALPLİ İLTİFAT KÖŞESİ */}
-          <div onClick={() => setCurrentLoveText(generateInfiniteCompliment())} className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", cursor: "pointer", textAlign: "center", position: "relative", overflow: "hidden" }}>
+          {/* SEVGİLİYE ÖZEL İLTİFAT KÖŞESİ (5 ZARİF KALPLİ) */}
+          <div className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
             
-            {/* Yazıları asla engellemeyen, arkada hafifçe süzülen kalpler */}
-            <span className="heart-float-1" style={{ position: "absolute", top: "10px", left: "15px", fontSize: "16px", pointerEvents: "none", zIndex: 1 }}>❤️</span>
-            <span className="heart-float-2" style={{ position: "absolute", bottom: "8px", right: "20px", fontSize: "15px", pointerEvents: "none", zIndex: 1 }}>💖</span>
-            <span className="heart-float-3" style={{ position: "absolute", top: "12px", right: "35%", fontSize: "13px", pointerEvents: "none", zIndex: 1 }}>🌸</span>
+            {/* Yazıları asla engellemeyen, arkada zarifçe süzülen 5 kalp/ışıltı */}
+            <span className="heart-float-1" style={{ position: "absolute", top: "8px", left: "12px", fontSize: "15px", pointerEvents: "none", zIndex: 1 }}>❤️</span>
+            <span className="heart-float-2" style={{ position: "absolute", bottom: "6px", right: "15px", fontSize: "14px", pointerEvents: "none", zIndex: 1 }}>💖</span>
+            <span className="heart-float-3" style={{ position: "absolute", top: "10px", right: "28%", fontSize: "12px", pointerEvents: "none", zIndex: 1 }}>🌸</span>
+            <span className="heart-float-4" style={{ position: "absolute", bottom: "10px", left: "25%", fontSize: "13px", pointerEvents: "none", zIndex: 1 }}>✨</span>
+            <span className="heart-float-5" style={{ position: "absolute", top: "45%", right: "8px", fontSize: "11px", pointerEvents: "none", zIndex: 1 }}>💕</span>
 
-            {/* İçerik (Kalplerin önünde yer alır, net okunur) */}
             <div style={{ position: "relative", zIndex: 2 }}>
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                <span style={{ fontSize: "16px" }}>💖</span>
-                <span style={{ fontSize: "11px", fontWeight: 800, color: "#F43F5E", letterSpacing: "0.5px", textTransform: "uppercase" }}>Sana Özel İltifat Köşesi</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", margin: "0 auto" }}>
+                  <span style={{ fontSize: "16px" }}>💖</span>
+                  <span style={{ fontSize: "11px", fontWeight: 800, color: "#F43F5E", letterSpacing: "0.5px", textTransform: "uppercase" }}>Sana Özel İltifat Köşesi</span>
+                </div>
+                <button onClick={() => toggleFavoriteCompliment(currentLoveText)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "18px" }} title="Favorilere Ekle">{isFav ? "❤️" : "🤍"}</button>
               </div>
-              <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700, lineHeight: 1.5, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-                "{currentLoveText}"
-              </p>
-              <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Yeni ve farklı bir iltifat için karta dokun 💕)</span>
+
+              <div onClick={() => setCurrentLoveText(generateInfiniteCompliment())} style={{ cursor: "pointer", textAlign: "center" }}>
+                <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700, lineHeight: 1.5, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+                  "{currentLoveText}"
+                </p>
+                <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Yeni ve farklı bir iltifat için karta dokun 💕)</span>
+              </div>
             </div>
+          </div>
+
+          {/* GÜNÜN SİHİRLİ MESAJI / NOTU ALANI */}
+          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "14px 18px", marginBottom: "16px", borderLeft: "4px solid #F43F5E", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
+            <p style={{ fontSize: "11px", color: "#F43F5E", margin: "0 0 4px", fontWeight: 800, letterSpacing: "0.5px" }}>💌 GÜNÜN SÜRPRİZ NOTU</p>
+            <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 600, fontStyle: "italic" }}>"{adminLoveNote}"</p>
           </div>
 
           {/* PROFESYONEL ÜST HEADER & SEVİYE KARTI */}
@@ -759,7 +846,7 @@
           {/* DETAYLI PROFESYONEL AYARLAR MODALI */}
           {settingsModalOpen && (
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "24px", width: "100%", maxWidth: "420px", padding: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "24px", width: "100%", maxWidth: "420px", padding: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.5)", maxHeight: "90vh", overflowY: "auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800 }}>⚙️ Uygulama Ayarları</h3>
                   <button onClick={() => setSettingsModalOpen(false)} style={{ background: "transparent", border: "none", color: colorMain, fontSize: "20px", cursor: "pointer", fontWeight: 800 }}>✕</button>
@@ -771,6 +858,11 @@
                     <button onClick={cycleTheme} style={{ width: "100%", background: bgInner, color: colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "12px", fontWeight: 700, fontSize: "13px", cursor: "pointer", textAlign: "left" }}>
                       Mevcut Tema: <strong style={{ color: "#38BDF8" }}>{theme === "dark" ? "Karanlık" : theme === "oled" ? "OLED Siyah" : "Aydınlık"}</strong> (Değiştirmek için tıkla)
                     </button>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700, display: "block", marginBottom: "6px" }}>💌 GÜNÜN SÜRPRİZ NOTUNU DÜZENLE</label>
+                    <input type="text" value={adminLoveNote} onChange={(e) => saveAdminLoveNote(e.target.value)} style={{ width: "100%", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "10px", padding: "10px", fontSize: "13px", fontWeight: 700 }} />
                   </div>
 
                   <div>
@@ -812,7 +904,12 @@
           {activeTab === "sayac" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px", boxShadow: "0 6px 20px rgba(0,0,0,0.1)" }}>
-                <p style={{ fontSize: "13px", fontWeight: 700, color: textMuted, margin: "0 0 14px" }}>🎯 Günlük Hedef Paneli</p>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                  <p style={{ fontSize: "13px", fontWeight: 700, color: textMuted, margin: 0 }}>🎯 Günlük Hedef Paneli</p>
+                  {(isStudyGoalReached && isParagraphGoalReached) && (
+                    <span style={{ fontSize: "11px", background: "rgba(45, 212, 191, 0.2)", color: "#2DD4BF", padding: "4px 10px", borderRadius: "10px", fontWeight: 800 }}>🏆 Günlük Hedef Bitti!</span>
+                  )}
+                </div>
 
                 <div style={{ marginBottom: "14px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
@@ -1066,7 +1163,7 @@
             </div>
           )}
 
-          {/* 4. KONULAR SEKMESİ */}
+          {/* 4. KONULAR & FAVORİLER & MİNİ OYUN SEKMESİ */}
           {activeTab === "konular" && (
             <div>
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "18px", marginBottom: "16px" }}>
@@ -1076,6 +1173,59 @@
                     <button key={s} onClick={() => setActiveTopicSubj(s)} style={{ background: activeTopicSubj === s ? "#38BDF8" : bgInner, color: activeTopicSubj === s ? "#090D16" : colorMain, border: `1px solid ${borderCard}`, borderRadius: "12px", padding: "8px 14px", fontWeight: 800, cursor: "pointer", fontSize: "12px", whiteSpace: "nowrap" }}>{s}</button>
                   ))}
                 </div>
+              </div>
+
+              {/* FAVORİ İLTİFATLAR KÖŞESİ */}
+              {favoriteCompliments.length > 0 && (
+                <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px" }}>
+                  <p style={{ fontSize: "14px", fontWeight: 800, margin: "0 0 10px", color: "#F43F5E" }}>❤️ Favori İltifatların ({favoriteCompliments.length})</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "180px", overflowY: "auto" }}>
+                    {favoriteCompliments.map((fTxt, idx) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: bgInner, padding: "10px 14px", borderRadius: "12px", border: `1px solid ${borderCard}`, fontSize: "12px", fontWeight: 600 }}>
+                        <span>✨ "{fTxt}"</span>
+                        <button onClick={() => toggleFavoriteCompliment(fTxt)} style={{ background: "transparent", color: "#EF4444", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "11px" }}>Kaldır</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* MİNİ BİLGİ YARIŞMASI (MOLA OYUNU) */}
+              <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <p style={{ fontSize: "14px", fontWeight: 800, margin: 0, color: "#2DD4BF" }}>🎮 Mola Eğlencesi: KPSS Bilgi Testi</p>
+                  <span style={{ fontSize: "11px", color: textMuted, fontWeight: 700 }}>Skor: {quizScore}</span>
+                </div>
+                {(() => {
+                  const currentQ = MINI_QUIZ_QUESTIONS[quizIndex % MINI_QUIZ_QUESTIONS.length];
+                  return (
+                    <div>
+                      <p style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 12px" }}>{currentQ.q}</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+                        {currentQ.options.map((opt, oIdx) => {
+                          let btnBg = bgInner;
+                          let btnColor = colorMain;
+                          if (selectedQuizOpt !== null) {
+                            if (oIdx === currentQ.answer) { btnBg = "rgba(45, 212, 191, 0.2)"; btnColor = "#2DD4BF"; }
+                            else if (oIdx === selectedQuizOpt) { btnBg = "rgba(239, 68, 68, 0.2)"; btnColor = "#EF4444"; }
+                          }
+                          return (
+                            <button key={oIdx} onClick={() => {
+                              if (selectedQuizOpt !== null) return;
+                              setSelectedQuizOpt(oIdx);
+                              if (oIdx === currentQ.answer) { setQuizScore(s => s + 10); triggerConfetti(); }
+                            }} style={{ background: btnBg, color: btnColor, border: `1px solid ${borderCard}`, borderRadius: "10px", padding: "10px 12px", textAlign: "left", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {selectedQuizOpt !== null && (
+                        <button onClick={() => { setSelectedQuizOpt(null); setQuizIndex(i => i + 1); }} style={{ width: "100%", background: "#2DD4BF", color: "#090D16", border: "none", borderRadius: "10px", padding: "8px", fontWeight: 800, cursor: "pointer", fontSize: "12px" }}>Sonraki Soruya Geç ➡️</button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px" }}>
