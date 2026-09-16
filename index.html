@@ -54,15 +54,31 @@
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
-    // Sevgilinin yüzünü güldürecek tatlı iltifatlar ve motivasyonlar
-    const LOVE_COMPLIMENTS = [
-      "Bugün de ne kadar güzel ve akıllısın sen öyle! Kalbim seninle atıyor sevgilim. ❤️",
-      "Çalışırken o kadar tatlı ve odaklı oluyorsun ki, sana hayran olmamak elde değil. ✨",
-      "Biliyorum bazen yoruluyorsun ama senin başaramayacağın hiçbir şey yok meleğim! Sen en iyisine layıksın. 🌸",
-      "Gülüşün dünyaya bedel. Arada bir derin bir nefes al ve ne kadar harika olduğunu hatırla sevgilim! 💖",
-      "Seninle gurur duyuyorum! Hedeflerine adım adım ilerlerken arkanda daima ben varım. 🌟",
-      "Dünyanın en tatlı ve en çalışkan sevgilisi iyi ki varsın! Hayatımın en güzel şansısın. 💫"
+    // Binlerce kombinasyon üreten devasa ve en seçkin iltifat / sevgi havuzu mekanizması
+    const LOVE_OPENINGS = [
+      "Bugün de", "Her zamanki gibi", "Biliyor musun,", "Dünyanın en güzeli,", 
+      "Gözbebeğim,", "Canımın içi,", "İyi ki hayatımdasın,", "Güzel sevgilim,",
+      "Çalışırken bile", "Masada ders çalışırken", "Hayatımın anlamı,", "Gönlümün sultanı,"
     ];
+    
+    const LOVE_MIDDLES = [
+      "ne kadar akıllı ve zeki olduğunla", "o harika gülüşünle", "güzelliğinle etrafına ışık saçmanla", 
+      "kararlılığın ve azimle çalışmanla", "tatlı hallerinle", "kalbinin temizliği ve güzelliğiyle",
+      "her geçen gün bana daha çok ilham vermenle", "hayatımı güzelleştirmenle"
+    ];
+
+    const LOVE_ENDINGS = [
+      "ne kadar gurur duysam az sevgilim! ❤️", "büyülenmemek elde değil, seni çok seviyorum! ✨", 
+      "inanıyorum ki en büyük başarıları sen kazanacaksın meleğim! 🌸", "kalbim daima seninle atıyor, iyi ki varsın! 💖",
+      "seninle her şey o kadar güzel ki, hayalimdeki nesin sen! 🌟", "başaramayacağın hiçbir şey yok, arkandayım sevgilim! 💫"
+    ];
+
+    const generateInfiniteCompliment = () => {
+      const op = LOVE_OPENINGS[Math.floor(Math.random() * LOVE_OPENINGS.length)];
+      const mid = LOVE_MIDDLES[Math.floor(Math.random() * LOVE_MIDDLES.length)];
+      const end = LOVE_ENDINGS[Math.floor(Math.random() * LOVE_ENDINGS.length)];
+      return `${op} ${mid} ${end}`;
+    };
 
     const MOTIVATIONS = [
       "Bugün döktüğün her damla alın teri, yarınki zaferinin temelidir.",
@@ -176,7 +192,7 @@
       const [filterDate, setFilterDate] = useState("");
       const [settingsModalOpen, setSettingsModalOpen] = useState(false);
       const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
-      const [loveIndex, setLoveIndex] = useState(0);
+      const [currentLoveText, setCurrentLoveText] = useState("");
 
       const [blockIndex, setBlockIndex] = useState(0);
       const [blockSecondsLeft, setBlockSecondsLeft] = useState(7200);
@@ -247,7 +263,7 @@
         };
         updateKpssTimer();
         setCurrentQuoteIndex(Math.floor(Math.random() * MOTIVATIONS.length));
-        setLoveIndex(Math.floor(Math.random() * LOVE_COMPLIMENTS.length));
+        setCurrentLoveText(generateInfiniteCompliment());
       }, []);
 
       const [targetStudyMins, setTargetStudyMins] = useState(180);
@@ -665,16 +681,16 @@
           overflowX: "hidden"
         }}>
           
-          {/* SEVGİLİYE ÖZEL İLTİFAT VE MOTİVASYON KARTI */}
-          <div onClick={() => setLoveIndex((prev) => (prev + 1) % LOVE_COMPLIMENTS.length)} className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", cursor: "pointer", textAlign: "center" }}>
+          {/* SEVGİLİYE ÖZEL BİNLERCE İLTİFAT ÜRETEN KART */}
+          <div onClick={() => setCurrentLoveText(generateInfiniteCompliment())} className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", cursor: "pointer", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
               <span style={{ fontSize: "16px" }}>💖</span>
-              <span style={{ fontSize: "11px", fontWeight: 800, color: "#F43F5E", letterSpacing: "0.5px", textTransform: "uppercase" }}>Günün İltifatı</span>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#F43F5E", letterSpacing: "0.5px", textTransform: "uppercase" }}>Sana Özel İltifat Köşesi</span>
             </div>
             <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700, lineHeight: 1.5 }}>
-              "{LOVE_COMPLIMENTS[loveIndex]}"
+              "{currentLoveText}"
             </p>
-            <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Yeni bir iltifat görmek için karta dokun 💕)</span>
+            <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Yeni ve farklı bir iltifat için karta dokun 💕)</span>
           </div>
 
           {/* PROFESYONEL ÜST HEADER & SEVİYE KARTI */}
