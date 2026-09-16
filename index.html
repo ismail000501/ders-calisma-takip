@@ -81,22 +81,26 @@
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
+    // Binlerce benzersiz kombinasyon üreten devasa iltifat havuzu
     const LOVE_OPENINGS = [
       "Bugün de", "Her zamanki gibi", "Biliyor musun,", "Dünyanın en güzeli,", 
       "Gözbebeğim,", "Canımın içi,", "İyi ki hayatımdasın,", "Güzel sevgilim,",
-      "Çalışırken bile", "Masada ders çalışırken", "Hayatımın anlamı,", "Gönlümün sultanı,"
+      "Çalışırken bile", "Masada ders çalışırken", "Hayatımın anlamı,", "Gönlümün sultanı,",
+      "Yıldızlar kadar parlak,", "Meleğim,", "Gözlerinin kahvesine ömrümü vereceğim,", "Hayatımın en güzel yüzü,"
     ];
     
     const LOVE_MIDDLES = [
       "ne kadar akıllı ve zeki olduğunla", "o harika gülüşünle", "güzelliğinle etrafına ışık saçmanla", 
       "kararlılığın ve azimle çalışmanla", "tatlı hallerinle", "kalbinin temizliği ve güzelliğiyle",
-      "her geçen gün bana daha çok ilham vermenle", "hayatımı güzelleştirmenle"
+      "her geçen gün bana daha çok ilham vermenle", "hayatımı güzelleştirmenle",
+      "derslerin üstesinden o muazzam zekanla gelmenle", "bakışındaki o asaletle"
     ];
 
     const LOVE_ENDINGS = [
       "ne kadar gurur duysam az sevgilim! ❤️", "büyülenmemek elde değil, seni çok seviyorum! ✨", 
       "inanıyorum ki en büyük başarıları sen kazanacaksın meleğim! 🌸", "kalbim daima seninle atıyor, iyi ki varsın! 💖",
-      "seninle her şey o kadar güzel ki, hayalimdeki nesin sen! 🌟", "başaramayacağın hiçbir şey yok, arkandayım sevgilim! 💫"
+      "seninle her şey o kadar güzel ki, hayalimdeki nesin sen! 🌟", "başaramayacağın hiçbir şey yok, arkandayım sevgilim! 💫",
+      "dünyanın en tatlı ve en çalışkan insanısın! 🌺", "seninle her yol sonuna kadar zaferle bitecek sevgilim! 👑"
     ];
 
     const generateInfiniteCompliment = () => {
@@ -115,12 +119,18 @@
       "Bugün çalışmadığın her saat, rakibinin öne geçtiği saattir."
     ];
 
-    const MINI_QUIZ_QUESTIONS = [
+    // Binlerce soru hissi veren genişletilmiş ÖSYM / KPSS soru havuzu
+    const EXPANDED_QUIZ_BANK = [
       { q: "Türkiye'nin yüz ölçümü olarak en büyük ili hangisidir?", options: ["Konya", "Ankara", "Sivas", "Erzurum"], answer: 0 },
       { q: "1982 Anayasası'na göre cumhurbaşkanlığı seçimi kaç yılda bir yapılır?", options: ["4", "5", "6", "7"], answer: 1 },
       { q: "Amasya Genelgesi'nin kararlarını kaleme alan ve imzalayan milli mücadele önderi kimdir?", options: ["İsmet İnönü", "Kazım Karabekir", "Mustafa Kemal Atatürk", "Fevzi Çakmak"], answer: 2 },
       { q: "Türkiye'de ilk pamuklu dokuma fabrikası hangi ilimizde açılmıştır?", options: ["İzmir", "Adana", "Aydın", "Denizli"], answer: 1 },
-      { q: "Anayasa mahkemesi üyelerini kim seçer?", options: ["TBMM", "Cumhurbaşkanı", "Hâkimler ve Savcılar Kurulu", "Yargıtay"], answer: 1 }
+      { q: "Anayasa mahkemesi üyelerini kim seçer?", options: ["TBMM", "Cumhurbaşkanı", "Hâkimler ve Savcılar Kurulu", "Yargıtay"], answer: 1 },
+      { q: "Mavi Gözlü Dev ve Kuvayi Milliye Destanı eserleriyle tanınan şairimiz kimdir?", options: ["Orhan Veli", "Nazım Hikmet", "Necip Fazıl", "Ahmet Hamdi"], answer: 1 },
+      { q: "Türkiye'nin UNESCO Dünya Miras Listesi'ne giren ilk kültürel varlığı hangisidir?", options: ["Göreme Milli Parkı", "Divriği Ulu Cami", "İstanbul Tarihi Alanları", "Hattuşa"], answer: 0 },
+      { q: "1982 Anayasası'na göre savaş oyu ve olağanüstü hallerde oy kullanamayacak olan grup hangisidir?", options: ["Öğrenciler", "Er ve erbaşlar ile askeri öğrenciler", "Yurtdışındakiler", "Memurlar"], answer: 1 },
+      { q: "Osmanlı Devleti'nde 'Silahtar' terimi ne anlama gelir?", options: ["Hazine görevlisi", "Padişahın silahlarını koruyan ve giydiren görevli", "Donanma komutanı", "Kadı yardımcısı"], answer: 1 },
+      { q: "Dünyanın en derin gölü olarak bilinen Baykal Gölü hangi ülkededir?", options: ["Kanada", "Rusya", "Moğolistan", "Kazakistan"], answer: 1 }
     ];
 
     const KPSS_TOPICS_DEFAULT = {
@@ -765,7 +775,7 @@
           overflowX: "hidden"
         }}>
           
-          {/* SEVGİLİYE ÖZEL İLTİFAT KÖŞESİ (5 ZARİF KALPLİ) */}
+          {/* SEVGİLİYE ÖZEL İLTİFAT KÖŞESİ (DEVASA KOMBİNASYONLU) */}
           <div className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
             
             <span className="heart-float-1" style={{ position: "absolute", top: "8px", left: "12px", fontSize: "15px", pointerEvents: "none", zIndex: 1 }}>❤️</span>
@@ -787,7 +797,7 @@
                 <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700, lineHeight: 1.5, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
                   "{currentLoveText}"
                 </p>
-                <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Yeni ve farklı bir iltifat için karta dokun 💕)</span>
+                <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Binlerce kombinasyondan yepyeni bir iltifat için dokun 💕)</span>
               </div>
             </div>
           </div>
@@ -1199,14 +1209,14 @@
                 </div>
               )}
 
-              {/* MİNİ BİLGİ YARIŞMASI (MOLA OYUNU) */}
+              {/* MİNİ BİLGİ YARIŞMASI (GENİŞLETİLMİŞ SORU HAVUZU) */}
               <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "20px", padding: "20px", marginBottom: "16px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                   <p style={{ fontSize: "14px", fontWeight: 800, margin: 0, color: "#2DD4BF" }}>🎮 Mola Eğlencesi: KPSS Bilgi Testi</p>
                   <span style={{ fontSize: "11px", color: textMuted, fontWeight: 700 }}>Skor: {quizScore}</span>
                 </div>
                 {(() => {
-                  const currentQ = MINI_QUIZ_QUESTIONS[quizIndex % MINI_QUIZ_QUESTIONS.length];
+                  const currentQ = EXPANDED_QUIZ_BANK[quizIndex % EXPANDED_QUIZ_BANK.length];
                   return (
                     <div>
                       <p style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 12px" }}>{currentQ.q}</p>
