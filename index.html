@@ -40,6 +40,16 @@
       100% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
     }
     .love-card-glow { animation: softGlow 4s infinite; }
+    
+    @keyframes floatHeart {
+      0% { transform: translateY(0px) scale(0.8); opacity: 0.3; }
+      50% { transform: translateY(-8px) scale(1.1); opacity: 0.7; }
+      100% { transform: translateY(0px) scale(0.8); opacity: 0.3; }
+    }
+    .heart-float-1 { animation: floatHeart 3s ease-in-out infinite; }
+    .heart-float-2 { animation: floatHeart 4s ease-in-out infinite 1s; }
+    .heart-float-3 { animation: floatHeart 3.5s ease-in-out infinite 0.5s; }
+
     input, textarea, button, select { font-family: 'Inter', sans-serif; }
     input:focus, textarea:focus, select:focus { outline: none; border-color: #38BDF8 !important; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
     button { transition: transform 0.1s ease, opacity 0.2s ease; }
@@ -681,16 +691,25 @@
           overflowX: "hidden"
         }}>
           
-          {/* SEVGİLİYE ÖZEL BİNLERCE İLTİFAT ÜRETEN KART */}
-          <div onClick={() => setCurrentLoveText(generateInfiniteCompliment())} className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", cursor: "pointer", textAlign: "center" }}>
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-              <span style={{ fontSize: "16px" }}>💖</span>
-              <span style={{ fontSize: "11px", fontWeight: 800, color: "#F43F5E", letterSpacing: "0.5px", textTransform: "uppercase" }}>Sana Özel İltifat Köşesi</span>
+          {/* SEVGİLİYE ÖZEL ARKA PLANI KALPLİ İLTİFAT KÖŞESİ */}
+          <div onClick={() => setCurrentLoveText(generateInfiniteCompliment())} className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", cursor: "pointer", textAlign: "center", position: "relative", overflow: "hidden" }}>
+            
+            {/* Yazıları asla engellemeyen, arkada hafifçe süzülen kalpler */}
+            <span className="heart-float-1" style={{ position: "absolute", top: "10px", left: "15px", fontSize: "16px", pointerEvents: "none", zIndex: 1 }}>❤️</span>
+            <span className="heart-float-2" style={{ position: "absolute", bottom: "8px", right: "20px", fontSize: "15px", pointerEvents: "none", zIndex: 1 }}>💖</span>
+            <span className="heart-float-3" style={{ position: "absolute", top: "12px", right: "35%", fontSize: "13px", pointerEvents: "none", zIndex: 1 }}>🌸</span>
+
+            {/* İçerik (Kalplerin önünde yer alır, net okunur) */}
+            <div style={{ position: "relative", zIndex: 2 }}>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                <span style={{ fontSize: "16px" }}>💖</span>
+                <span style={{ fontSize: "11px", fontWeight: 800, color: "#F43F5E", letterSpacing: "0.5px", textTransform: "uppercase" }}>Sana Özel İltifat Köşesi</span>
+              </div>
+              <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700, lineHeight: 1.5, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+                "{currentLoveText}"
+              </p>
+              <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Yeni ve farklı bir iltifat için karta dokun 💕)</span>
             </div>
-            <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700, lineHeight: 1.5 }}>
-              "{currentLoveText}"
-            </p>
-            <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Yeni ve farklı bir iltifat için karta dokun 💕)</span>
           </div>
 
           {/* PROFESYONEL ÜST HEADER & SEVİYE KARTI */}
