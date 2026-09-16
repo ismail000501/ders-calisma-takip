@@ -81,7 +81,6 @@
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
-    // Binlerce kombinasyon üreten devasa ve en seçkin iltifat / sevgi havuzu
     const LOVE_OPENINGS = [
       "Bugün de", "Her zamanki gibi", "Biliyor musun,", "Dünyanın en güzeli,", 
       "Gözbebeğim,", "Canımın içi,", "İyi ki hayatımdasın,", "Güzel sevgilim,",
@@ -237,6 +236,7 @@
       
       const [favoriteCompliments, setFavoriteCompliments] = useState([]);
       const [adminLoveNote, setAdminLoveNote] = useState("Bugün de masada harikalar yaratıyorsun sevgilim, seninle gurur duyuyorum! 💖");
+      const [isNoteOpened, setIsNoteOpened] = useState(false);
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
@@ -792,10 +792,19 @@
             </div>
           </div>
 
-          {/* GÜNÜN SİHİRLİ MESAJI / NOTU ALANI (AYARLARDAN KONTROL EDİLİR) */}
-          <div style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "14px 18px", marginBottom: "16px", borderLeft: "4px solid #F43F5E", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
+          {/* GÜNÜN SİHİRLİ MESAJI / DOKUNARAK AÇILAN SÜPRİZ NOT KARTI */}
+          <div onClick={() => { setIsNoteOpened(!isNoteOpened); if (!isNoteOpened) triggerConfetti(); }} style={{ background: bgCard, border: `1px solid ${borderCard}`, borderRadius: "16px", padding: "16px 18px", marginBottom: "16px", borderLeft: "4px solid #F43F5E", boxShadow: "0 4px 15px rgba(0,0,0,0.1)", cursor: "pointer", textAlign: "center", transition: "all 0.2s ease" }}>
             <p style={{ fontSize: "11px", color: "#F43F5E", margin: "0 0 4px", fontWeight: 800, letterSpacing: "0.5px" }}>💌 GÜNÜN SÜRPRİZ NOTU</p>
-            <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 600, fontStyle: "italic" }}>"{adminLoveNote}"</p>
+            {!isNoteOpened ? (
+              <div style={{ padding: "6px 0" }}>
+                <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700 }}>🎁 Sana bir sürprizim var, açmak için dokun 💕</p>
+              </div>
+            ) : (
+              <div style={{ animation: "pulseAlert 0.5s ease" }}>
+                <p style={{ fontSize: "13px", color: colorMain, margin: "6px 0 4px", fontWeight: 600, fontStyle: "italic", lineHeight: 1.5 }}>"{adminLoveNote}"</p>
+                <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Kapatmak için tekrar dokun 🌸)</span>
+              </div>
+            )}
           </div>
 
           {/* PROFESYONEL ÜST HEADER & SEVİYE KARTI */}
@@ -862,7 +871,7 @@
                   <div>
                     <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700, display: "block", marginBottom: "6px" }}>💌 GÜNÜN SÜRPRİZ NOTUNU DÜZENLE (Senin Kaleminden)</label>
                     <input type="text" value={adminLoveNote} onChange={(e) => saveAdminLoveNote(e.target.value)} style={{ width: "100%", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "10px", padding: "10px", fontSize: "13px", fontWeight: 700 }} />
-                    <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "4px" }}>Buraya yazdığın mesaj uygulamada anında güncellenir.</span>
+                    <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "4px" }}>Buraya yazdığın mesaj sevgilinin dokunarak açacağı sürpriz kutuya kaydedilir.</span>
                   </div>
 
                   <div>
