@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#090D16">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Ders Çalışma Takip - ÖSYM Pro</title>
+  <title>Aşk & KPSS Çalışma Takip Pro</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -81,7 +81,6 @@
 
     const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
     
-    // Binlerce benzersiz kombinasyon üreten devasa iltifat havuzu
     const LOVE_OPENINGS = [
       "Bugün de", "Her zamanki gibi", "Biliyor musun,", "Dünyanın en güzeli,", 
       "Gözbebeğim,", "Canımın içi,", "İyi ki hayatımdasın,", "Güzel sevgilim,",
@@ -119,7 +118,6 @@
       "Bugün çalışmadığın her saat, rakibinin öne geçtiği saattir."
     ];
 
-    // Binlerce soru hissi veren genişletilmiş ÖSYM / KPSS soru havuzu
     const EXPANDED_QUIZ_BANK = [
       { q: "Türkiye'nin yüz ölçümü olarak en büyük ili hangisidir?", options: ["Konya", "Ankara", "Sivas", "Erzurum"], answer: 0 },
       { q: "1982 Anayasası'na göre cumhurbaşkanlığı seçimi kaç yılda bir yapılır?", options: ["4", "5", "6", "7"], answer: 1 },
@@ -247,6 +245,7 @@
       const [favoriteCompliments, setFavoriteCompliments] = useState([]);
       const [adminLoveNote, setAdminLoveNote] = useState("Bugün de masada harikalar yaratıyorsun sevgilim, seninle gurur duyuyorum! 💖");
       const [isNoteOpened, setIsNoteOpened] = useState(false);
+      const [isComplimentOpened, setIsComplimentOpened] = useState(false);
       
       const [activeTab, setActiveTab] = useState("sayac");
       const [sayacFolder, setSayacFolder] = useState("kronometre");
@@ -506,6 +505,15 @@
         try { localStorage.setItem("study-target-p-v2", String(v)); } catch (e) {}
       };
 
+      const todaySessions = sessions.filter((s) => s.date === today);
+      const todayMinutes = todaySessions.filter(s => s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
+      const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
+
+      const sendWhatsAppReport = () => {
+        const msg = encodeURIComponent(`❤️ Aşkım bugün çalışma raporum:\n⏱️ Ders Çalışması: ${formatMinutes(todayMinutes)}\n📖 Paragraf / Soru: ${todayParagraphCount} adet\n🔥 Çalışma Serim: ${streakCount} Gün\n🌲 Yetişen Ağaç: ${forestCount} Adet\nSeni çok seviyorum! ✨`);
+        window.open(`https://api.whatsapp.com/send?text=${msg}`, "_blank");
+      };
+
       useEffect(() => {
         if (isRunning) {
           startTimeRef.current = Date.now();
@@ -673,10 +681,6 @@
         reader.readAsText(file);
       };
 
-      const todaySessions = sessions.filter((s) => s.date === today);
-      const todayMinutes = todaySessions.filter(s => s.type !== "paragraf").reduce((a, s) => a + s.minutes, 0);
-      const todayParagraphCount = todaySessions.filter(s => s.type === "paragraf").reduce((a, s) => a + (s.count || 0), 0);
-
       const isStudyGoalReached = todayMinutes >= targetStudyMins;
       const isParagraphGoalReached = todayParagraphCount >= targetParagraphs;
 
@@ -775,8 +779,8 @@
           overflowX: "hidden"
         }}>
           
-          {/* SEVGİLİYE ÖZEL İLTİFAT KÖŞESİ (DEVASA KOMBİNASYONLU) */}
-          <div className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
+          {/* SEVGİLİYE ÖZEL İLTİFAT KÖŞESİ (DOKUNARAK AÇILAN) */}
+          <div onClick={() => { setIsComplimentOpened(!isComplimentOpened); if (!isComplimentOpened) triggerConfetti(); }} className="love-card-glow" style={{ background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%)", border: "1px solid rgba(244, 63, 94, 0.4)", borderRadius: "20px", padding: "18px 20px", marginBottom: "16px", position: "relative", overflow: "hidden", cursor: "pointer", textAlign: "center" }}>
             
             <span className="heart-float-1" style={{ position: "absolute", top: "8px", left: "12px", fontSize: "15px", pointerEvents: "none", zIndex: 1 }}>❤️</span>
             <span className="heart-float-2" style={{ position: "absolute", bottom: "6px", right: "15px", fontSize: "14px", pointerEvents: "none", zIndex: 1 }}>💖</span>
@@ -790,15 +794,23 @@
                   <span style={{ fontSize: "16px" }}>💖</span>
                   <span style={{ fontSize: "11px", fontWeight: 800, color: "#F43F5E", letterSpacing: "0.5px", textTransform: "uppercase" }}>Sana Özel İltifat Köşesi</span>
                 </div>
-                <button onClick={() => toggleFavoriteCompliment(currentLoveText)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "18px" }} title="Favorilere Ekle">{isFav ? "❤️" : "🤍"}</button>
+                {isComplimentOpened && (
+                  <button onClick={(e) => { e.stopPropagation(); toggleFavoriteCompliment(currentLoveText); }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "18px" }} title="Favorilere Ekle">{isFav ? "❤️" : "🤍"}</button>
+                )}
               </div>
 
-              <div onClick={() => setCurrentLoveText(generateInfiniteCompliment())} style={{ cursor: "pointer", textAlign: "center" }}>
-                <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700, lineHeight: 1.5, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-                  "{currentLoveText}"
-                </p>
-                <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Binlerce kombinasyondan yepyeni bir iltifat için dokun 💕)</span>
-              </div>
+              {!isComplimentOpened ? (
+                <div style={{ padding: "8px 0" }}>
+                  <p style={{ fontSize: "13px", color: colorMain, margin: 0, fontWeight: 700 }}>🎁 Yeni bir iltifat için dokun aç 💕</p>
+                </div>
+              ) : (
+                <div onClick={(e) => { e.stopPropagation(); setCurrentLoveText(generateInfiniteCompliment()); }} style={{ animation: "pulseAlert 0.5s ease" }}>
+                  <p style={{ fontSize: "13px", color: colorMain, margin: "6px 0 4px", fontWeight: 700, lineHeight: 1.5, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+                    "{currentLoveText}"
+                  </p>
+                  <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "6px" }}>(Başka iltifat için yazının üstüne tıkla 🌸)</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -882,6 +894,13 @@
                     <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700, display: "block", marginBottom: "6px" }}>💌 GÜNÜN SÜRPRİZ NOTUNU DÜZENLE (Senin Kaleminden)</label>
                     <input type="text" value={adminLoveNote} onChange={(e) => saveAdminLoveNote(e.target.value)} style={{ width: "100%", background: bgInner, border: `1px solid ${borderCard}`, color: colorMain, borderRadius: "10px", padding: "10px", fontSize: "13px", fontWeight: 700 }} />
                     <span style={{ fontSize: "10px", color: textMuted, display: "block", marginTop: "4px" }}>Buraya yazdığın mesaj sevgilinin dokunarak açacağı sürpriz kutuya kaydedilir.</span>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700, display: "block", marginBottom: "6px" }}>💬 RAPORLAMA</label>
+                    <button onClick={sendWhatsAppReport} style={{ width: "100%", background: "rgba(37, 211, 102, 0.2)", color: "#25D366", border: "1px solid #25D366", borderRadius: "12px", padding: "12px", fontWeight: 800, fontSize: "13px", cursor: "pointer", textAlign: "left" }}>
+                      💚 Çalışma Raporumu WhatsApp ile Gönder
+                    </button>
                   </div>
 
                   <div>
